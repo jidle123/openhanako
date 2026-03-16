@@ -90,7 +90,7 @@ function ensureGroup(role: string): HTMLElement {
 
 // ── 用户消息 ──
 
-function addUserMessage(text: string, files?: Array<{ isDirectory?: boolean; name: string; path: string }> | null, deskContext?: { dir: string; fileCount: number } | null): void {
+function addUserMessage(text: string, files?: Array<{ isDirectory?: boolean; name: string; path: string; base64Data?: string; mimeType?: string }> | null, deskContext?: { dir: string; fileCount: number } | null): void {
   const icons = (window.HanaModules as Record<string, unknown>).icons as { SVG_ICONS: Record<string, string> };
   const utils = (window.HanaModules as Record<string, unknown>).utils as { escapeHtml: (s: string) => string; isImageFile: (n: string) => boolean };
   const t = (window as any).t as ((key: string, vars?: Record<string, unknown>) => string) | undefined;
@@ -126,7 +126,9 @@ function addUserMessage(text: string, files?: Array<{ isDirectory?: boolean; nam
         const card = document.createElement('div');
         card.className = 'attach-card attach-image';
         const img = document.createElement('img');
-        img.src = `file://${f.path}`;
+        img.src = f.base64Data
+          ? `data:${f.mimeType || 'image/png'};base64,${f.base64Data}`
+          : `file://${f.path}`;
         img.alt = f.name;
         img.loading = 'lazy';
         card.appendChild(img);

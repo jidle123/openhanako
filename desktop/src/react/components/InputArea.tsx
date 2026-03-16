@@ -128,6 +128,7 @@ function InputAreaInner() {
   const isComposing = useRef(false);
 
   // Zustand actions
+  const addAttachedFile = useStore(s => s.addAttachedFile);
   const removeAttachedFile = useStore(s => s.removeAttachedFile);
   const clearAttachedFiles = useStore(s => s.clearAttachedFiles);
   const toggleDocContext = useStore(s => s.toggleDocContext);
@@ -249,6 +250,35 @@ function InputAreaInner() {
   })();
 
 
+  // ── Paste image ──
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (!item.type.startsWith('image/')) continue;
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (!file) continue;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        // "data:image/png;base64,xxxxx" → 拆出 mimeType 和 base64
+        const match = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+        if (!match) return;
+        const [, mimeType, base64Data] = match;
+        const ext = mimeType.split('/')[1] || 'png';
+        addAttachedFile({
+          path: `clipboard-${Date.now()}.${ext}`,
+          name: `粘贴图片.${ext}`,
+          base64Data,
+          mimeType,
+        });
+      };
+      reader.readAsDataURL(file);
+      break; // 只处理第一张
+    }
+  }, [addAttachedFile]);
+
   // ── Load plan mode + thinking level on mount ──
   useEffect(() => {
     hanaFetch('/api/plan-mode')
@@ -312,14 +342,19 @@ function InputAreaInner() {
       // 图片文件读 base64 编码
       const hana = (window as any).hana;
       const images: Array<{ type: 'image'; data: string; mimeType: string }> = [];
-      if (imageFiles.length > 0 && hana?.readFileBase64) {
+      if (imageFiles.length > 0) {
         for (const img of imageFiles) {
           try {
-            const base64: string = await hana.readFileBase64(img.path);
-            if (base64) {
-              const ext = img.name.toLowerCase().replace(/^.*\./, '');
-              const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml' };
-              images.push({ type: 'image', data: base64, mimeType: mimeMap[ext] || 'image/png' });
+            if (img.base64Data && img.mimeType) {
+              // 内联 base64（粘贴图片）
+              images.push({ type: 'image', data: img.base64Data, mimeType: img.mimeType });
+            } else if (hana?.readFileBase64) {
+              const base64: string = await hana.readFileBase64(img.path);
+              if (base64) {
+                const ext = img.name.toLowerCase().replace(/^.*\./, '');
+                const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml' };
+                images.push({ type: 'image', data: base64, mimeType: mimeMap[ext] || 'image/png' });
+              }
             }
           } catch {
             // 读取失败的图片降级为路径文本
@@ -457,6 +492,7 @@ function InputAreaInner() {
           value={inputText}
           onChange={e => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           onCompositionStart={() => { isComposing.current = true; }}
           onCompositionEnd={() => { isComposing.current = false; }}
         />

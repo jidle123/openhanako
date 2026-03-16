@@ -254,6 +254,7 @@ export class AgentManager {
       throw new Error(`助手 "${agentId}" 不存在或未初始化`);
     }
     this._switching = true;
+    const prevAgentId = this._activeAgentId;
     log.log(`switching agent to ${agentId}`);
     try {
       const hub = this._d.getHub();
@@ -263,16 +264,21 @@ export class AgentManager {
       this._activeAgentId = agentId;
 
       const preferredId = this.agent.config.models?.chat;
-      if (!preferredId) {
-        throw new Error(`agent "${agentId}" 未配置 models.chat`);
-      }
       const models = this._d.getModels();
-      const model = models.availableModels.find(m => m.id === preferredId);
-      if (!model) {
-        throw new Error(`agent "${agentId}" 配置的模型 "${preferredId}" 不在可用列表中`);
+      if (preferredId) {
+        const model = models.availableModels.find(m => m.id === preferredId);
+        if (!model) {
+          throw new Error(`agent "${agentId}" 配置的模型 "${preferredId}" 不在可用列表中`);
+        }
+        models.defaultModel = model;
       }
-      models.defaultModel = model;
-      log.log(`agent switched to ${this.agent.agentName} (${agentId}), model=${preferredId}`);
+      // 未配 models.chat 的 agent 继承当前 defaultModel
+      const effectiveModel = preferredId || models.defaultModel?.id || "inherited";
+      log.log(`agent switched to ${this.agent.agentName} (${agentId}), model=${effectiveModel}`);
+    } catch (err) {
+      this._activeAgentId = prevAgentId;
+      try { this._d.getHub()?.resumeAfterAgentSwitch(); } catch {}
+      throw err;
     } finally {
       this._switching = false;
     }

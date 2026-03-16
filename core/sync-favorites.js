@@ -194,8 +194,10 @@ export function syncFavoritesToModelsJson(configPath, opts = {}) {
       if (existingModels.has(mid)) {
         const existing = { ...existingModels.get(mid) };
         if (!existing.name) existing.name = humanizeName(mid);
-        // 补全 input 字段（旧版本创建的条目可能缺失，Pi SDK 默认 ["text"] 会过滤图片）
-        if (!existing.input) existing.input = ["text", "image"];
+        // 补全 input 字段（旧版本创建的条目可能缺 "image"，Pi SDK 会静默过滤图片）
+        if (!existing.input || !existing.input.includes("image")) {
+          existing.input = ["text", "image"];
+        }
         modelList.push(existing);
       } else {
         modelList.push(generateModelDefaults(mid));
@@ -219,7 +221,7 @@ export function syncFavoritesToModelsJson(configPath, opts = {}) {
       models: (pv.models || []).map(m => {
         const copy = { ...m };
         if (!copy.name) copy.name = humanizeName(copy.id);
-        if (!copy.input) copy.input = ["text", "image"];
+        if (!copy.input || !copy.input.includes("image")) copy.input = ["text", "image"];
         return copy;
       }),
     };

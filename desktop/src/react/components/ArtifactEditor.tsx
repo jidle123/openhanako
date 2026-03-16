@@ -242,9 +242,10 @@ export const ArtifactEditor = forwardRef<ArtifactEditorHandle, ArtifactEditorPro
     const saveToFile = useCallback((text: string) => {
       const fp = filePathRef.current;
       if (!fp) return;
-      selfSaveRef.current = true;
       window.platform?.writeFile(fp, text).finally(() => {
-        setTimeout(() => { selfSaveRef.current = false; }, 300);
+        setTimeout(() => {
+          if (!saveTimerRef.current) selfSaveRef.current = false;
+        }, 300);
       });
     }, []);
 
@@ -262,9 +263,13 @@ export const ArtifactEditor = forwardRef<ArtifactEditorHandle, ArtifactEditorPro
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) return;
+          selfSaveRef.current = true;
           const text = update.state.doc.toString();
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = setTimeout(() => saveToFile(text), SAVE_DELAY);
+          saveTimerRef.current = setTimeout(() => {
+            saveTimerRef.current = null;
+            saveToFile(text);
+          }, SAVE_DELAY);
         }),
         // Dynamic compartments
         c.gutter.of(isMd ? [] : lineNumbers()),
@@ -292,10 +297,10 @@ export const ArtifactEditor = forwardRef<ArtifactEditorHandle, ArtifactEditorPro
       };
     }, [mode, language]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // content prop change → update editor
+    // content prop change → update editor (skip during active editing)
     useEffect(() => {
       const view = viewRef.current;
-      if (!view) return;
+      if (!view || selfSaveRef.current) return;
       const current = view.state.doc.toString();
       if (current !== content) {
         view.dispatch({

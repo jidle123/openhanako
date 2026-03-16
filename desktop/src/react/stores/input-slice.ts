@@ -2,6 +2,9 @@ export interface AttachedFile {
   path: string;
   name: string;
   isDirectory?: boolean;
+  /** 内联 base64 数据（粘贴图片时使用，跳过文件读取） */
+  base64Data?: string;
+  mimeType?: string;
 }
 
 export interface DocContextFile {
