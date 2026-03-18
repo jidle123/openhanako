@@ -5967,7 +5967,7 @@ body.resizing .jian-sidebar-inner {
     align-items: center;
     gap: 8px;
     width: 100%;
-    padding: 0.5rem 0.65rem;
+    padding: 0.65rem var(--space-md);
     background: none;
     border: none;
     cursor: pointer;
