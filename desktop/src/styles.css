@@ -4246,6 +4246,7 @@ body.resizing .jian-sidebar-inner {
 }
 
 .desk-cwd-skill-item {
+    user-select: none;
     display: flex;
     flex-direction: column;
     padding: 0.2rem 0.3rem;
