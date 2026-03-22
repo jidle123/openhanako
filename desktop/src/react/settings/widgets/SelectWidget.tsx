@@ -59,10 +59,13 @@ export function SelectWidget({ options, value, onChange, placeholder }: SelectWi
     return () => document.removeEventListener('mousedown', handler);
   }, [open, close]);
 
-  // 滚动时关闭（避免 fixed 面板脱轨）
+  // 滚动时关闭（避免 fixed 面板脱轨），但排除下拉面板自身的滚动
   useEffect(() => {
     if (!open) return;
-    const handler = () => close();
+    const handler = (e: Event) => {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      close();
+    };
     window.addEventListener('scroll', handler, true);
     return () => window.removeEventListener('scroll', handler, true);
   }, [open, close]);
