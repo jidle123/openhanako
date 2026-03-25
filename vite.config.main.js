@@ -19,6 +19,10 @@ export default defineConfig({
         "electron",
         ...nodeBuiltins,
 
+        // ws: CJS native addon (bufferutil/utf-8-validate) breaks when bundled.
+        // Keep external — Electron runtime resolves from node_modules.
+        "ws",
+
         // mammoth / exceljs: large CJS deps with deep dependency trees.
         // Kept external — electron-builder includes them from node_modules.
         "mammoth",
@@ -30,11 +34,10 @@ export default defineConfig({
     sourcemap: false,
   },
 
-  // Force Node.js resolution for ws and similar packages that ship browser stubs.
-  // Vite defaults include "browser" condition which resolves ws → ws/browser.js
-  // (a stub that throws). Override to use only Node-appropriate conditions.
+  // Force Node.js resolution: include "node" condition and exclude "browser"
+  // to prevent ws and similar packages from resolving to browser stubs.
   resolve: {
-    conditions: ["node", "require"],
+    conditions: ["node", "import", "module", "require", "default"],
     mainFields: ["main", "module"],
   },
 });

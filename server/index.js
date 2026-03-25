@@ -281,6 +281,18 @@ try {
     const bm = BrowserManager.instance();
     bm.setWsTransport(ws);
 
+    // 调试：记录浏览器 WS 消息往返
+    const _bwsLog = (line) => { try { fs.appendFileSync(path.join(os.homedir(), ".hanako", "browser-ws.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
+    _bwsLog("browser WS connected");
+    const origSend = ws.send.bind(ws);
+    ws.send = function(data, ...args) {
+      try { const m = JSON.parse(data); _bwsLog(`→ cmd=${m.cmd || m.type} id=${m.id || "?"}`); } catch {}
+      return origSend(data, ...args);
+    };
+    ws.on("message", (data) => {
+      try { const m = JSON.parse(data); _bwsLog(`← type=${m.type} id=${m.id || "?"} error=${m.error || "none"}`); } catch {}
+    });
+
     ws.on("close", () => {
       if (bm._transport?._ws === ws) bm.setWsTransport(null);
       console.log("[server] Electron browser control WS disconnected");

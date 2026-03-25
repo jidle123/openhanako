@@ -1358,12 +1358,19 @@ function setupBrowserCommands() {
       try { msg = JSON.parse(data); } catch { return; }
       if (msg?.type !== "browser-cmd") return;
       const { id, cmd, params } = msg;
+      const _bLog = (line) => { try { require("fs").appendFileSync(require("path").join(require("os").homedir(), ".hanako", "browser-cmd.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
+      _bLog(`→ received cmd=${cmd} id=${id}`);
       try {
         const result = await handleBrowserCommand(cmd, params || {});
+        _bLog(`✓ cmd=${cmd} result=${JSON.stringify(result).slice(0, 200)} wsReady=${ws.readyState}`);
         if (ws.readyState === 1) {
           ws.send(JSON.stringify({ type: "browser-result", id, result }));
+          _bLog(`✓ sent result`);
+        } else {
+          _bLog(`✗ ws not ready (${ws.readyState}), result dropped`);
         }
       } catch (err) {
+        _bLog(`✗ cmd=${cmd} error=${err.message}`);
         if (ws.readyState === 1) {
           ws.send(JSON.stringify({ type: "browser-result", id, error: err.message }));
         }

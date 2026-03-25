@@ -1,6 +1,6 @@
 {
   "name": "hanako",
-  "version": "0.67.3",
+  "version": "0.67.4",
   "type": "module",
   "description": "Hanako - a personal AI agent with memory and soul",
   "license": "Apache-2.0",
@@ -104,7 +104,8 @@
       "desktop/src/**/*.{html,icns,png,svg,json}",
       "desktop/src/assets/**",
       "package.json",
-      "!**/node_modules/**"
+      "!**/node_modules/**",
+      "node_modules/ws/**"
     ],
     "extraResources": [
       {

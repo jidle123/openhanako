@@ -288,7 +288,7 @@ export function createSessionsRoute(engine) {
       await engine.switchSession(sessionPath);
 
       // 恢复目标 session 的浏览器（若有）
-      await bm.resumeForSession(sessionPath);
+      if (bm.isRunning) await bm.resumeForSession(sessionPath);
 
       return c.json({
         ok: true,
@@ -304,6 +304,9 @@ export function createSessionsRoute(engine) {
         isStreaming: engine.isSessionStreaming(engine.currentSessionPath),
       });
     } catch (err) {
+      const errDetail = `${err.message}\n${err.stack || ""}`;
+      console.error("[sessions/switch] error:", errDetail);
+      try { require("fs").appendFileSync(require("path").join(require("os").homedir(), ".hanako", "switch-error.log"), `${new Date().toISOString()}\n${errDetail}\n---\n`); } catch {}
       return c.json({ error: err.message }, 500);
     }
   });

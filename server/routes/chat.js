@@ -675,7 +675,7 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
             const appErr = AppError.wrap(err);
             errorBus.report(appErr, { context: { wsMessageType: msg.type } });
             if (!appErr.message?.includes('aborted')) {
-              wsSend(ws, { type: 'error', error: appErr.toJSON() });
+              wsSend(ws, { type: 'error', message: appErr.message || 'Unknown error', error: appErr.toJSON() });
             }
           });
         },
