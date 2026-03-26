@@ -169,7 +169,7 @@ describe("model sync related routes", () => {
         getOAuthProviders: () => [{ id: "openai-codex", name: "OpenAI Codex" }],
         getApiKey: vi.fn(),
       },
-      providerRegistry: { getCredentials: () => null },
+      providerRegistry: { getCredentials: () => null, isOAuth: (id) => id === "openai-codex", getAuthJsonKey: (id) => id },
       configPath: "/tmp/test-config.yaml",
     };
 
@@ -209,7 +209,7 @@ describe("model sync related routes", () => {
         getOAuthProviders: () => [{ id: "openai-codex", name: "OpenAI Codex" }],
         getApiKey: vi.fn(),
       },
-      providerRegistry: { getCredentials: () => null },
+      providerRegistry: { getCredentials: () => null, isOAuth: (id) => id === "openai-codex", getAuthJsonKey: (id) => id },
       configPath: "/tmp/test-config.yaml",
     };
 
@@ -251,7 +251,7 @@ describe("model sync related routes", () => {
         getOAuthProviders: () => [{ id: "minimax", name: "MiniMax" }],
         getApiKey: vi.fn(),
       },
-      providerRegistry: { getCredentials: () => null },
+      providerRegistry: { getCredentials: () => null, isOAuth: (id) => id === "openai-codex", getAuthJsonKey: (id) => id },
       configPath: "/tmp/test-config.yaml",
     };
 
@@ -317,7 +317,7 @@ describe("model sync related routes", () => {
         getOAuthProviders: () => [{ id: "openai-codex", name: "OpenAI Codex" }],
         getApiKey: vi.fn(),
       },
-      providerRegistry: { getCredentials: () => null },
+      providerRegistry: { getCredentials: () => null, isOAuth: (id) => id === "openai-codex", getAuthJsonKey: (id) => id },
       configPath: "/tmp/test-config.yaml",
     };
 

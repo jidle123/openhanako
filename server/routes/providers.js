@@ -205,15 +205,16 @@ export function createProvidersRoute(engine) {
     const effectiveApi = explicitApi || savedProvider.api || "";
     const hasExplicitRemoteConfig = !!(effectiveBaseUrl && effectiveApi && (api_key || savedKey));
 
-    const oauthProviderIds = new Set(
-      (engine.authStorage?.getOAuthProviders?.() || []).map((provider) => provider.id),
-    );
-    const isOAuthProvider = !!name && oauthProviderIds.has(name);
+    const isOAuthProvider = !!name && engine.providerRegistry.isOAuth(name);
 
     if (isOAuthProvider && !hasExplicitRemoteConfig) {
       try {
         await engine.refreshAvailableModels();
-        const registryModels = engine.availableModels.filter((model) => model.provider === name);
+        // Pi SDK 用 authJsonKey 作为 model.provider，需要两个 ID 都匹配
+        const authKey = engine.providerRegistry.getAuthJsonKey(name);
+        const registryModels = engine.availableModels.filter(
+          (model) => model.provider === name || model.provider === authKey,
+        );
         if (registryModels.length > 0) {
           const normalized = normalizeRegistryModels(registryModels);
           saveToCache(name, normalized);
