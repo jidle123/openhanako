@@ -77,7 +77,7 @@ describe("loadConfig", () => {
     expect(cfg.api.provider).toBe("");
   });
 
-  it("从 providers.yaml 解析 API 协议", () => {
+  it("只返回 config.yaml 原始值，不从 providers.yaml 解析", () => {
     fs.writeFileSync(
       path.join(hanakoHome, "providers.yaml"),
       YAML.dump({
@@ -93,7 +93,10 @@ describe("loadConfig", () => {
     );
     writeYaml({ api: { provider: "openai" } });
     const cfg = loadConfig(configPath);
-    expect(cfg.api.api).toBe("openai-completions");
+    // config-loader 不再从 providers.yaml 补全，只返回 config.yaml 中的原始值
+    expect(cfg.api.api).toBe("");
+    expect(cfg.api.api_key).toBe("");
+    expect(cfg.api.provider).toBe("openai");
   });
 
 });

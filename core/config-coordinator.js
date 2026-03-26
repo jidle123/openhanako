@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { createModuleLogger } from "../lib/debug-log.js";
+import { saveConfig } from "../lib/memory/config-loader.js";
 import { findModel } from "../shared/model-ref.js";
 
 const log = createModuleLogger("config");
@@ -194,6 +195,14 @@ export class ConfigCoordinator {
     const sessionCoord = this._d.getSessionCoordinator();
     sessionCoord?.updateCurrentSessionModel(modelId, provider);
     this.persistSessionMeta();
+
+    // 持久化到 agent config.yaml（直接用 saveConfig 避免经过 updateConfig 的循环路径）
+    const agent = this._d.getAgent();
+    if (agent?.configPath) {
+      saveConfig(agent.configPath, {
+        models: { chat: provider ? { id: modelId, provider } : modelId },
+      });
+    }
   }
 
   setThinkingLevel(level) {

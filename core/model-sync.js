@@ -7,6 +7,7 @@
 
 import fs from "fs";
 import { fromRoot } from "../shared/hana-root.js";
+import { isLocalBaseUrl } from "../shared/net-utils.js";
 
 const _knownModels = JSON.parse(fs.readFileSync(fromRoot("lib", "known-models.json"), "utf-8"));
 
@@ -21,10 +22,6 @@ function humanizeName(id) {
   name = name.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   name = name.replace(/(\d) (\d)/g, "$1.$2");
   return name;
-}
-
-function isLocalBaseUrl(url) {
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(String(url || ""));
 }
 
 /** 从 auth.json entry 提取 API key（兼容多种格式） */

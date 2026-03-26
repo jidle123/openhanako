@@ -21,13 +21,10 @@ import { ProviderRegistry } from "./provider-registry.js";
 import { ExecutionRouter } from "./execution-router.js";
 import { fromRoot } from "../shared/hana-root.js";
 import { findModel } from "../shared/model-ref.js";
+import { isLocalBaseUrl } from "../shared/net-utils.js";
 import { syncModels } from "./model-sync.js";
 
 const _knownModels = JSON.parse(readFileSync(fromRoot("lib", "known-models.json"), "utf-8"));
-
-function isLocalBaseUrl(url) {
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(String(url || ""));
-}
 
 export class ModelManager {
   /**

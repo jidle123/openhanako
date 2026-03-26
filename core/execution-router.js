@@ -19,10 +19,7 @@
  */
 
 import { t } from "../server/i18n.js";
-
-function isLocalBaseUrl(url) {
-  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(String(url || ""));
-}
+import { isLocalBaseUrl } from "../shared/net-utils.js";
 
 // 角色名称 -> preferences 字段名（SHARED_MODEL_KEYS 兼容）
 const ROLE_TO_PREF_KEY = {

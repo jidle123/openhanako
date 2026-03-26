@@ -2,7 +2,7 @@
  * 配置管理 REST 路由
  */
 import fs from "fs/promises";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync } from "fs";
 import path from "path";
 import { Hono } from "hono";
 import { safeJson } from "../hono-helpers.js";
@@ -74,31 +74,6 @@ export function createConfigRoute(engine) {
       // providers 块 → 全局 providers.yaml
       let providersChanged = false;
       if (agentPartial.providers) {
-        // 删除 provider 时（值为 null），同步清理 models.json
-        const deletedProviders = Object.keys(agentPartial.providers)
-          .filter(name => agentPartial.providers[name] === null);
-        if (deletedProviders.length > 0) {
-          try {
-            const modelsJsonPath = engine.modelsJsonPath;
-            const modelsJson = JSON.parse(readFileSync(modelsJsonPath, "utf-8"));
-            // 收集被删 provider 下的所有模型 ID
-            const orphanedModels = new Set();
-            let changed = false;
-            for (const name of deletedProviders) {
-              const provData = modelsJson.providers?.[name];
-              if (provData) {
-                for (const m of (provData.models || [])) {
-                  orphanedModels.add(typeof m === "string" ? m : m?.id);
-                }
-                delete modelsJson.providers[name];
-                changed = true;
-              }
-            }
-            if (changed) {
-              writeFileSync(modelsJsonPath, JSON.stringify(modelsJson, null, 4) + "\n", "utf-8");
-            }
-          } catch {}
-        }
         for (const [name, data] of Object.entries(agentPartial.providers)) {
           if (data === null) {
             engine.providerRegistry.removeProvider(name);
