@@ -154,7 +154,7 @@ export function createProvidersRoute(engine) {
         custom_models: customModels,
         has_credentials: !!(p.api_key || (isOAuth && oauthInfo?.loggedIn)),
         logged_in: isOAuth ? !!oauthInfo?.loggedIn : undefined,
-        supports_oauth: isOAuth && ALLOWED_OAUTH.has(name),
+        supports_oauth: isOAuth && (ALLOWED_OAUTH.has(name) || ALLOWED_OAUTH.has(provRegistry?.getAuthJsonKey(name))),
         is_coding_plan: isCodingPlan(name),
         can_delete: !isOAuth || Object.prototype.hasOwnProperty.call(providers, name),
       };
