@@ -96,21 +96,27 @@ export class EventBus {
    */
   async request(type, payload, options = {}) {
     const handlers = this._handlers.get(type);
-    if (!handlers || handlers.length === 0) {
-      throw new BusNoHandlerError(type);
-    }
+    if (!handlers || handlers.length === 0) throw new BusNoHandlerError(type);
     const timeout = options.timeout ?? 30000;
-    return Promise.race([
-      this._tryHandlers(type, handlers, payload),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new BusTimeoutError(type, timeout)), timeout)
-      ),
-    ]);
+
+    let timerId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timerId = setTimeout(() => reject(new BusTimeoutError(type, timeout)), timeout);
+    });
+
+    try {
+      return await Promise.race([
+        this._tryHandlers(type, handlers, payload),
+        timeoutPromise,
+      ]);
+    } finally {
+      clearTimeout(timerId);
+    }
   }
 
   async _tryHandlers(type, handlers, payload) {
-    for (const h of handlers) {
-      const result = await h(payload, undefined);
+    for (const h of [...handlers]) {
+      const result = await h(payload);
       if (result !== EventBus.SKIP) return result;
     }
     throw new BusNoHandlerError(type);

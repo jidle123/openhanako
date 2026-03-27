@@ -94,4 +94,16 @@ describe("error type identity", () => {
     }
     throw new Error("should have thrown");
   });
+
+  it("BusTimeoutError has correct name and type", async () => {
+    bus.handle("slow:op2", () => new Promise(() => {}));
+    try {
+      await bus.request("slow:op2", {}, { timeout: 50 });
+    } catch (err) {
+      expect(err.name).toBe("BusTimeoutError");
+      expect(err.type).toBe("slow:op2");
+      return;
+    }
+    throw new Error("should have thrown");
+  }, 5000);
 });
