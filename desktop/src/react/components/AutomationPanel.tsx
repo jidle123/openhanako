@@ -186,9 +186,13 @@ function AutomationItem({
   const avatarSrc = agentAvatarUrl || yuanFallbackAvatar(agentYuan);
 
   // 构建模型选项
+  // model 可能是 string 或 {id, provider} 对象（agent tool call 传入）
+  const jobModelId = typeof job.model === 'object' && job.model !== null
+    ? (job.model as unknown as { id: string }).id
+    : (job.model || '');
   const modelOptions: string[] = [];
   const modelSet = new Set(availableModels);
-  if (job.model && !modelSet.has(job.model)) modelOptions.push(job.model);
+  if (jobModelId && !modelSet.has(jobModelId)) modelOptions.push(jobModelId);
   modelOptions.push(...availableModels);
 
   return (
@@ -230,7 +234,7 @@ function AutomationItem({
               <select
                 className={fp.autoItemModelSelect}
                 title="Model"
-                value={job.model || ''}
+                value={jobModelId}
                 onChange={e => onUpdate(job.id, { model: e.target.value })}
               >
                 <option value="">{(window.t ?? ((p: string) => p))('automation.defaultModel')}</option>

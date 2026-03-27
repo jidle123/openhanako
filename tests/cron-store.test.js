@@ -507,3 +507,58 @@ describe("CronStore markRun 错误退避", () => {
     expect(store.getJob(job.id).consecutiveErrors).toBe(0);
   });
 });
+
+// ════════════════════════════════════════════
+//  cron 解析器边界
+// ════════════════════════════════════════════
+
+describe("cron 解析器边界", () => {
+  it("字段值越界返回 null（70 分钟）", () => {
+    const store = makeTmpStore();
+    const result = store._calcNextRun("cron", "70 * * * *", new Date().toISOString());
+    expect(result).toBeNull();
+  });
+
+  it("字段值越界返回 null（25 小时）", () => {
+    const store = makeTmpStore();
+    const result = store._calcNextRun("cron", "0 25 * * *", new Date().toISOString());
+    expect(result).toBeNull();
+  });
+
+  it("反向范围返回 null", () => {
+    const store = makeTmpStore();
+    const result = store._calcNextRun("cron", "5-2 * * * *", new Date().toISOString());
+    expect(result).toBeNull();
+  });
+
+  it("at Invalid Date 返回 null", () => {
+    const store = makeTmpStore();
+    const result = store._calcNextRun("at", "not-a-date", new Date().toISOString());
+    expect(result).toBeNull();
+  });
+
+  it("有效 cron 表达式仍正常工作", () => {
+    const store = makeTmpStore();
+    const result = store._calcNextRun("cron", "0 7 * * *", new Date().toISOString());
+    expect(result).not.toBeNull();
+  });
+});
+
+// ════════════════════════════════════════════
+//  logRun 日志修剪
+// ════════════════════════════════════════════
+
+describe("CronStore logRun 日志修剪", () => {
+  it("logRun 超过 500 行时修剪到 300 行", () => {
+    const store = makeTmpStore();
+    for (let i = 0; i < 510; i++) {
+      store.logRun("job_1", { status: "success", i });
+    }
+    // 第 501 次写入后触发修剪（501→300），之后 502-510 再追加 9 行 = 309
+    const history = store.getRunHistory("job_1", 9999);
+    expect(history.length).toBeLessThanOrEqual(310);
+    expect(history.length).toBeGreaterThan(0);
+    // 确认确实发生了修剪（不修剪的话是 510）
+    expect(history.length).toBeLessThan(500);
+  });
+});
