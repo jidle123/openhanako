@@ -9,6 +9,7 @@ interface PluginInfo {
   version?: string;
   description?: string;
   status: 'loaded' | 'failed' | 'disabled';
+  source: 'builtin' | 'community';
   contributions?: string[];
   error?: string | null;
 }
@@ -61,7 +62,7 @@ export function PluginsTab() {
   const loadPlugins = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await hanaFetch('/api/plugins');
+      const res = await hanaFetch('/api/plugins?source=community');
       const data = await res.json();
       setPlugins(Array.isArray(data) ? data : []);
     } catch (err) {

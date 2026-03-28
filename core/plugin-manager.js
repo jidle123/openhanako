@@ -34,15 +34,18 @@ export class PluginManager {
   scan() {
     const results = [];
     const seen = new Set();
-    for (const dir of this._pluginsDirs) {
+    for (let i = 0; i < this._pluginsDirs.length; i++) {
+      const dir = this._pluginsDirs[i];
+      const source = i === 0 ? "builtin" : "community";
       if (!fs.existsSync(dir)) continue;
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-        if (seen.has(entry.name)) continue; // 靠前的目录优先，同名跳过
+        if (seen.has(entry.name)) continue;
         seen.add(entry.name);
         const pluginDir = path.join(dir, entry.name);
         try {
           const desc = this._readPluginDescriptor(pluginDir, entry.name);
+          desc.source = source;
           if (seen.has(`id:${desc.id}`)) {
             console.warn(`[plugin-manager] plugin id "${desc.id}" 冲突（目录 "${entry.name}"），跳过`);
             continue;

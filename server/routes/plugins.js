@@ -52,13 +52,16 @@ export function createPluginsRoute(engine) {
   route.get("/plugins", (c) => {
     const pm = engine.pluginManager;
     if (!pm) return c.json([]);
-    const plugins = pm.listPlugins().map(p => ({
+    const source = c.req.query("source"); // ?source=community 或 ?source=builtin
+    let plugins = pm.listPlugins();
+    if (source) plugins = plugins.filter(p => p.source === source);
+    return c.json(plugins.map(p => ({
       id: p.id, name: p.name, version: p.version,
       description: p.description, status: p.status,
+      source: p.source || "community",
       contributions: p.contributions,
       error: p.error || null,
-    }));
-    return c.json(plugins);
+    })));
   });
 
   route.get("/plugins/config-schemas", (c) => {
