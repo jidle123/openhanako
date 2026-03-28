@@ -202,6 +202,8 @@ export default route;
 
 自动挂载到 `/api/plugins/{pluginId}/...`。上例的完整路径是 `/api/plugins/my-plugin/webhook`。
 
+Route handler 可通过工厂函数参数或 `c.get("pluginCtx")` 获取 PluginContext，其中 `ctx.bus` 可直接调用内置 session 操作：`session:send`、`session:abort`、`session:history`、`session:list`、`agent:list`。完整 API 见 `.docs/PLUGIN-DEV.md` 的 Route Context 和 Session Bus Handlers 章节。
+
 ### Hooks（事件拦截）⚡ full-access
 
 `hooks.json` 映射事件类型到 handler 脚本：
