@@ -14,8 +14,10 @@ import { createModuleLogger } from "../lib/debug-log.js";
 import { clearConfigCache } from "../lib/memory/config-loader.js";
 import { t } from "../server/i18n.js";
 import { ActivityStore } from "../lib/desk/activity-store.js";
+import { createHash } from "crypto";
 import {
   generateAgentId as _generateAgentId,
+  generateDescription,
 } from "./llm-utils.js";
 import { findModel } from "../shared/model-ref.js";
 
@@ -114,6 +116,11 @@ export class AgentManager {
       }
     }
     log(`[init] ${this._agents.size} 个 agent 初始化完成`);
+
+    // 异步刷新所有 agent 的 description（fire-and-forget，不阻塞启动）
+    for (const id of this._agents.keys()) {
+      this._refreshDescription(id).catch(() => {});
+    }
   }
 
   // ── List ──
@@ -178,6 +185,43 @@ export class AgentManager {
       } catch {}
     }
     return agents;
+  }
+
+  /**
+   * 异步刷新 agent 的 description.md
+   * 通过 hash 比对 personality + yuan 类型，变化时调用 LLM 重新生成。
+   */
+  async _refreshDescription(agentId) {
+    try {
+      const ag = this._agents.get(agentId);
+      if (!ag) return;
+
+      const personality = ag.personality;
+      const yuan = ag.config?.agent?.yuan || "hanako";
+      const hash = createHash("sha256").update(personality + "\n" + yuan).digest("hex");
+
+      const descPath = path.join(this._d.agentsDir, agentId, "description.md");
+
+      // 读取已有 hash
+      try {
+        const firstLine = fs.readFileSync(descPath, "utf-8").split("\n")[0].trim();
+        const match = firstLine.match(/^<!--\s*sourceHash:\s*(\S+)\s*-->$/);
+        if (match?.[1] === hash) return; // 没变化，跳过
+      } catch {} // 文件不存在，继续生成
+
+      const utilConfig = this._d.resolveUtilityConfig();
+      const locale = ag.config?.locale || "zh";
+      const desc = await generateDescription(utilConfig, personality, locale);
+      if (!desc) {
+        log.log(`[description] ${agentId}: 生成跳过（LLM 不可用或返回空）`);
+        return;
+      }
+
+      fs.writeFileSync(descPath, `<!-- sourceHash: ${hash} -->\n${desc}`, "utf-8");
+      log.log(`[description] ${agentId}: 已更新`);
+    } catch (err) {
+      console.warn(`[agent-mgr] _refreshDescription(${agentId}) failed:`, err.message);
+    }
   }
 
   // ── Create ──

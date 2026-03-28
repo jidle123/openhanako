@@ -1,3 +1,7 @@
+import { createHash } from "crypto";
+import fs from "fs";
+import path from "path";
+import os from "os";
 import { describe, expect, it, vi } from "vitest";
 import { generateDescription } from "../core/llm-utils.js";
 
@@ -23,5 +27,24 @@ describe("generateDescription", () => {
       "en",
     );
     expect(result).toBeNull();
+  });
+});
+
+describe("description hash logic", () => {
+  it("writes description.md with sourceHash comment", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "desc-test-"));
+    const personality = "Test personality";
+    const yuan = "hanako";
+    const hash = createHash("sha256").update(personality + "\n" + yuan).digest("hex");
+
+    const descPath = path.join(tmpDir, "description.md");
+    const content = `<!-- sourceHash: ${hash} -->\n测试描述`;
+    fs.writeFileSync(descPath, content, "utf-8");
+
+    const firstLine = fs.readFileSync(descPath, "utf-8").split("\n")[0].trim();
+    const match = firstLine.match(/^<!--\s*sourceHash:\s*(\S+)\s*-->$/);
+    expect(match?.[1]).toBe(hash);
+
+    fs.rmSync(tmpDir, { recursive: true });
   });
 });
