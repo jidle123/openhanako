@@ -1167,8 +1167,6 @@
     "outputFileNotAbsolute": "路徑必須是絕對路徑: {path}",
     "outputFileNotFound": "檔案不存在: {path}",
     "outputFilePresented": "檔案已呈現: {summary}",
-    "msgAgentNotFound": "找不到 agent \"{id}\"。目前可用：{ids}",
-    "msgAgentNoReply": "（{name} 沒有回覆）",
     "settingsUnknownKey": "未知的設定項「{key}」。請先用 search 查找正確的 key。",
     "settingsInvalidValue": "「{value}」不是有效的選項。可選：{options}",
     "settingsInvalidToggle": "toggle 類型僅接受 \"true\" 或 \"false\"。",
@@ -1391,13 +1389,6 @@
       "description": "僅用於給另一個 agent 發一則私訊，讓對方知道某件事。\n不要用這個工具派任務或取得結果，那是 ask_agent 的職責。",
       "toDesc": "目標 agent 的 ID",
       "messageDesc": "訊息內容"
-    },
-    "messageAgent": {
-      "label": "私訊 Agent",
-      "description": "向其他 agent 傳送私訊並等待回覆。適合需要諮詢或協調另一個 agent 時使用。\n對方會根據自己的人設和配置作答，對話在私訊空間內進行，不經過頻道。\n重要：訊息內容以你自己的身分發出，不要代替使用者說話。例如使用者說「去找 ming 聊聊天」，你應該用自己的口吻寫訊息（如「ming，最近怎麼樣？」），而不是「使用者想和你聊聊」。",
-      "toDesc": "目標 agent 的 ID（如 \"butter\"）",
-      "messageDesc": "要傳送的訊息內容",
-      "maxTurnsDesc": "最多來回輪數，預設 3。對方用 <done/> 可提前結束。"
     },
     "cron": {
       "label": "排程任務",

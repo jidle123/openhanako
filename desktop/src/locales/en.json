@@ -1181,8 +1181,6 @@
     "outputFileNotAbsolute": "Path must be absolute: {path}",
     "outputFileNotFound": "File not found: {path}",
     "outputFilePresented": "Files presented: {summary}",
-    "msgAgentNotFound": "Agent \"{id}\" not found. Available: {ids}",
-    "msgAgentNoReply": "({name} did not reply)",
     "settingsUnknownKey": "Unknown setting \"{key}\". Use search to find the correct key.",
     "settingsInvalidValue": "\"{value}\" is not a valid option. Available: {options}",
     "settingsInvalidToggle": "Toggle settings only accept \"true\" or \"false\".",
@@ -1406,13 +1404,6 @@
       "description": "Send a single direct message to another agent to inform them of something.\nDo not use this tool to assign tasks or get results; that is ask_agent's job.",
       "toDesc": "Target agent's ID",
       "messageDesc": "Message content"
-    },
-    "messageAgent": {
-      "label": "Message Agent",
-      "description": "Send a direct message to another agent and wait for a reply. Use when you need to consult or coordinate with another agent.\nThe other agent responds based on their own persona and config. The conversation takes place in a DM space, not through channels.\nImportant: Messages are sent as yourself, not on behalf of the user. For example, if the user says 'go chat with ming', write in your own voice (e.g. 'ming, how's it going?'), not 'the user wants to chat with you'.",
-      "toDesc": "Target agent's ID (e.g. \"butter\")",
-      "messageDesc": "Message content to send",
-      "maxTurnsDesc": "Maximum number of back-and-forth turns, default 3. The other agent can end early with <done/>."
     },
     "cron": {
       "label": "Scheduled Tasks",

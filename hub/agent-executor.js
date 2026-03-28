@@ -4,7 +4,7 @@
  * 使用 Engine 中的长驻 Agent 实例（不再创建临时 Agent），
  * 创建临时 session 执行多轮 prompt，捕获标记了 capture: true 的轮次输出。
  *
- * ChannelRouter 和 AgentMessenger 共用这个执行器。
+ * ChannelRouter 和 DmRouter 共用这个执行器。
  */
 
 import fs from "fs";

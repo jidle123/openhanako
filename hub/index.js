@@ -17,7 +17,6 @@ import { EventBus } from "./event-bus.js";
 import { ChannelRouter } from "./channel-router.js";
 import { GuestHandler } from "./guest-handler.js";
 import { Scheduler } from "./scheduler.js";
-import { AgentMessenger } from "./agent-messenger.js";
 import { DmRouter } from "./dm-router.js";
 
 export class Hub {
@@ -31,7 +30,6 @@ export class Hub {
     this._channelRouter = new ChannelRouter({ hub: this });
     this._guestHandler = new GuestHandler({ hub: this });
     this._scheduler = new Scheduler({ hub: this });
-    this._agentMessenger = new AgentMessenger({ hub: this });
     this._dmRouter = new DmRouter({ hub: this });
 
     // 双向引用：engine 也能拿到 hub
@@ -111,10 +109,6 @@ export class Hub {
     // 路由表：按顺序匹配，第一条命中即执行。
     // 优先级通过位置保证，新增路由在此处显式插入，不依赖散落在各处的 if 顺序。
     const routes = [
-      { // Agent → Agent 私聊（优先，防止被 owner 路由吞掉）
-        match: o => o.from && o.to,
-        handle: () => this._agentMessenger.send(text, o.from, o.to, opts),
-      },
       { // 桌面端 owner
         match: o => !o.sessionKey && !o.ephemeral && o.role === "owner",
         handle: () => o.sessionPath

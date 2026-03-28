@@ -1157,8 +1157,6 @@
     "outputFileNotAbsolute": "パスは絶対パスである必要があります: {path}",
     "outputFileNotFound": "ファイルが見つかりません: {path}",
     "outputFilePresented": "ファイルを表示しました: {summary}",
-    "msgAgentNotFound": "agent \"{id}\" が見つかりません。利用可能：{ids}",
-    "msgAgentNoReply": "（{name} は返信しませんでした）",
     "settingsUnknownKey": "不明な設定項目「{key}」。search で正しいキーを検索してください。",
     "settingsInvalidValue": "「{value}」は有効な選択肢ではありません。利用可能: {options}",
     "settingsInvalidToggle": "toggle タイプは \"true\" または \"false\" のみ受け付けます。",
@@ -1381,13 +1379,6 @@
       "description": "別の agent に一通のダイレクトメッセージを送り、何かを知らせるためだけに使います。\nこのツールでタスクを割り当てたり結果を取得したりしないでください。それは ask_agent の役割です。",
       "toDesc": "対象 agent の ID",
       "messageDesc": "メッセージ内容"
-    },
-    "messageAgent": {
-      "label": "Agent にメッセージ",
-      "description": "別の agent にダイレクトメッセージを送り、返信を待ちます。他の agent に相談や調整が必要な場合に使います。\n相手は独自のペルソナと設定に基づいて返答し、会話は DM 空間で行われ、チャンネルは経由しません。\n重要：メッセージは自分自身の名義で送信し、ユーザーの代わりに話さないでください。例えばユーザーが「ming と話してきて」と言った場合、自分の口調で書きます（例：「ming、最近どう？」）。「ユーザーがあなたと話したがっています」とは書きません。",
-      "toDesc": "対象 agent の ID（例：\"butter\"）",
-      "messageDesc": "送信するメッセージ内容",
-      "maxTurnsDesc": "最大やり取り回数、デフォルト 3。相手は <done/> で早期終了できます。"
     },
     "cron": {
       "label": "スケジュールタスク",

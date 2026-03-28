@@ -1181,8 +1181,6 @@
     "outputFileNotAbsolute": "路径必须是绝对路径: {path}",
     "outputFileNotFound": "文件不存在: {path}",
     "outputFilePresented": "文件已呈现: {summary}",
-    "msgAgentNotFound": "找不到 agent \"{id}\"。当前可用：{ids}",
-    "msgAgentNoReply": "（{name} 没有回复）",
     "settingsUnknownKey": "未知的设置项「{key}」。请先用 search 查找正确的 key。",
     "settingsInvalidValue": "「{value}」不是有效的选项。可选：{options}",
     "settingsInvalidToggle": "toggle 类型仅接受 \"true\" 或 \"false\"。",
@@ -1406,13 +1404,6 @@
       "description": "仅用于给另一个 agent 发一条私信，让对方知道某件事。\n不要用这个工具派任务或获取结果，那是 ask_agent 的职责。",
       "toDesc": "目标 agent 的 ID",
       "messageDesc": "消息内容"
-    },
-    "messageAgent": {
-      "label": "私信 Agent",
-      "description": "向其他 agent 发送私信并等待回复。适合需要咨询或协调另一个 agent 时使用。\n对方会根据自己的人设和配置作答，对话在私信空间内进行，不经过频道。\n重要：message 内容以你自己的身份发出，不要代替用户说话。例如用户说「去找 ming 聊聊天」，你应该用自己的口吻写消息（如「ming，最近怎么样？」），而不是「用户想和你聊聊」。",
-      "toDesc": "目标 agent 的 ID（如 \"butter\"）",
-      "messageDesc": "要发送的消息内容",
-      "maxTurnsDesc": "最多来回轮数，默认 3。对方用 <done/> 可提前结束。"
     },
     "cron": {
       "label": "定时任务",
