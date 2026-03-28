@@ -131,6 +131,30 @@ export class PreferencesManager {
     this.savePreferences(prefs);
   }
 
+  /** 读取是否允许 full-access 社区插件运行 */
+  getAllowFullAccessPlugins() {
+    return this.getPreferences().allow_full_access_plugins || false;
+  }
+
+  /** 保存是否允许 full-access 社区插件运行 */
+  setAllowFullAccessPlugins(value) {
+    const prefs = this.getPreferences();
+    prefs.allow_full_access_plugins = !!value;
+    this.savePreferences(prefs);
+  }
+
+  /** 读取用户手动禁用的插件 ID 列表 */
+  getDisabledPlugins() {
+    return this.getPreferences().disabled_plugins || [];
+  }
+
+  /** 保存用户手动禁用的插件 ID 列表 */
+  setDisabledPlugins(list) {
+    const prefs = this.getPreferences();
+    prefs.disabled_plugins = Array.isArray(list) ? list : [];
+    this.savePreferences(prefs);
+  }
+
   /** 读取更新通道偏好："stable" | "beta" */
   getUpdateChannel() {
     return this.getPreferences().update_channel || "stable";
