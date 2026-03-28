@@ -77,26 +77,17 @@ export function AboutTab() {
         return (
           <div className={styles['about-update']}>
             <span>{t('settings.about.updateAvailable', { version: newVer })}</span>
-            <a className={styles['about-update-link']} href="#"
-              onClick={(e) => { e.preventDefault(); handleDownload(); }}>
-              {t('settings.about.updateDownload')}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </a>
           </div>
         );
       case 'downloading':
         return (
           <div className={styles['about-update']}>
-            <span>{t('settings.about.updateDownloading', { version: newVer })}</span>
-            {progress && (
-              <span className={styles['about-update-progress']}>
-                {t('settings.about.updateProgress', { percent: progress.percent })}
-              </span>
-            )}
+            <span>
+              {t('settings.about.updateDownloading', {
+                agentName: settingsConfig?.agent?.name || 'Hanako',
+                percent: progress ? Math.round(progress.percent) : 0,
+              })}
+            </span>
           </div>
         );
       case 'downloaded':
@@ -107,7 +98,10 @@ export function AboutTab() {
               onClick={(e) => { e.preventDefault(); handleInstall(); }}>
               {t('settings.about.updateInstall')}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
+                <path d="M21 2v6h-6" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M3 22v-6h6" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               </svg>
             </a>
           </div>
@@ -115,8 +109,16 @@ export function AboutTab() {
       case 'error':
         return (
           <div className={styles['about-update']}>
-            <span className={styles['about-update-error']}>{t('settings.about.updateError')}</span>
-            {error && <span className={styles['about-update-error-detail']}>{error}</span>}
+            {error === 'disk_space_insufficient' ? (
+              <span className={styles['about-update-error']}>{t('settings.about.updateDiskSpace')}</span>
+            ) : error === 'running_from_dmg' ? (
+              <span className={styles['about-update-error']}>{t('settings.about.updateNeedInstall')}</span>
+            ) : (
+              <>
+                <span className={styles['about-update-error']}>{t('settings.about.updateError')}</span>
+                {error && <span className={styles['about-update-error-detail']}>{error}</span>}
+              </>
+            )}
           </div>
         );
       case 'latest':

@@ -109,12 +109,14 @@ jobs:
           echo "Pre-signing complete."
 
       # macOS 打包（签名 + 公证）
-      - name: Build macOS DMG
+      - name: Build macOS (DMG + ZIP)
         if: runner.os == 'macOS'
         run: |
           ulimit -n 65536
-          npx electron-builder --mac dmg --${{ matrix.arch }} --publish never
+          PUBLISH_FLAG=${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+          npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish $PUBLISH_FLAG
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_KEYCHAIN: ${{ env.CSC_KEYCHAIN }}
@@ -125,8 +127,12 @@ jobs:
       # Windows 打包
       - name: Build Windows installer
         if: runner.os == 'Windows'
-        run: npx electron-builder --win nsis --publish never
+        shell: pwsh
+        run: |
+          $publishFlag = if ("${{ github.ref }}".StartsWith("refs/tags/v")) { "always" } else { "never" }
+          npx electron-builder --win nsis --publish $publishFlag
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
@@ -136,10 +142,12 @@ jobs:
           name: installer-${{ matrix.os }}-${{ matrix.arch }}
           path: |
             dist/*.dmg
+            dist/*.zip
             dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
           if-no-files-found: error
 
-  # 双平台构建完成后，自动创建 GitHub Release 并上传安装包
   release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
@@ -151,6 +159,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Check if tag is on stable
         id: check
@@ -166,12 +179,82 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: false
-          prerelease: ${{ steps.check.outputs.prerelease == 'true' }}
-          generate_release_notes: true
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
+      - name: Merge latest-mac.yml (dual architecture)
+        run: |
+          ARM64_YML=$(find artifacts -path '*arm64*' -name 'latest-mac.yml' | head -1)
+          X64_YML=$(find artifacts -path '*x64*' -name 'latest-mac.yml' | head -1)
+
+          if [ -n "$ARM64_YML" ] && [ -n "$X64_YML" ]; then
+            echo "Merging $ARM64_YML + $X64_YML"
+            node -e "
+              const fs = require('fs');
+
+              function parseYml(text) {
+                const obj = { files: [] };
+                let currentFile = null;
+                for (const line of text.split('\n')) {
+                  if (line.trim().startsWith('- url:')) {
+                    currentFile = { url: line.split('url:')[1].trim() };
+                    obj.files.push(currentFile);
+                  } else if (currentFile && line.trim().startsWith('sha512:')) {
+                    currentFile.sha512 = line.split('sha512:')[1].trim();
+                  } else if (currentFile && line.trim().startsWith('size:')) {
+                    currentFile.size = parseInt(line.split('size:')[1].trim());
+                  } else if (!line.startsWith(' ') && !line.startsWith('-')) {
+                    const kv = line.match(/^(\w+):\s*(.+)/);
+                    if (kv && kv[1] !== 'files') obj[kv[1]] = kv[2].trim();
+                    currentFile = null;
+                  }
+                }
+                return obj;
+              }
+
+              function dumpYml(obj) {
+                let out = 'version: ' + obj.version + '\n';
+                out += 'files:\n';
+                for (const f of obj.files) {
+                  out += '  - url: ' + f.url + '\n';
+                  if (f.sha512) out += '    sha512: ' + f.sha512 + '\n';
+                  if (f.size) out += '    size: ' + f.size + '\n';
+                }
+                if (obj.path) out += 'path: ' + obj.path + '\n';
+                if (obj.sha512) out += 'sha512: ' + obj.sha512 + '\n';
+                if (obj.releaseDate) out += \"releaseDate: '\" + obj.releaseDate + \"'\n\";
+                return out;
+              }
+
+              const arm64 = parseYml(fs.readFileSync('$ARM64_YML', 'utf8'));
+              const x64 = parseYml(fs.readFileSync('$X64_YML', 'utf8'));
+
+              const merged = { ...arm64 };
+              const allFiles = [...(arm64.files || []), ...(x64.files || [])];
+              const seen = new Set();
+              merged.files = allFiles.filter(f => {
+                if (seen.has(f.url)) return false;
+                seen.add(f.url);
+                return true;
+              });
+
+              fs.writeFileSync('latest-mac.yml', dumpYml(merged));
+              console.log('Merged latest-mac.yml with', merged.files.length, 'files');
+            "
+            gh release upload "${{ github.ref_name }}" latest-mac.yml --clobber
+          elif [ -n "$ARM64_YML" ]; then
+            echo "Only arm64 yml found, uploading as-is"
+          elif [ -n "$X64_YML" ]; then
+            echo "Only x64 yml found, uploading as-is"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release (un-draft)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          PRERELEASE="${{ steps.check.outputs.prerelease }}"
+          if [ "$PRERELEASE" = "true" ]; then
+            gh release edit "$TAG" --prerelease --draft=false
+          else
+            gh release edit "$TAG" --latest --draft=false
+          fi

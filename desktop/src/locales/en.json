@@ -524,13 +524,15 @@
       "updateAvailable": "New version available: v{{version}}",
       "updateDownload": "Download",
       "updateChecking": "Checking for updates…",
-      "updateDownloading": "Downloading v{{version}}…",
+      "updateDownloading": "{{agentName}} is preparing a new home {{percent}}%",
       "updateReadyInstall": "v{{version}} ready to install",
-      "updateInstall": "Install now",
+      "updateInstall": "Restart to update",
       "updateProgress": "{{percent}}%",
       "updateError": "Update check failed",
       "updateLatest": "You're up to date",
       "updateCheckBtn": "Check for updates",
+      "updateNeedInstall": "Please move Hanako to the Applications folder first",
+      "updateDiskSpace": "Not enough disk space to download update",
       "betaUpdates": "Receive beta updates"
     },
     "me": {

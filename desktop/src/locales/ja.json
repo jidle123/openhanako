@@ -522,13 +522,15 @@
       "updateAvailable": "新しいバージョンがあります：v{{version}}",
       "updateDownload": "ダウンロード",
       "updateChecking": "アップデートを確認中…",
-      "updateDownloading": "v{{version}} をダウンロード中…",
-      "updateReadyInstall": "v{{version}} のインストール準備完了",
-      "updateInstall": "今すぐインストール",
+      "updateDownloading": "{{agentName}}が新しいお家を準備中 {{percent}}%",
+      "updateReadyInstall": "v{{version}} インストール準備完了",
+      "updateInstall": "再起動して更新",
       "updateProgress": "{{percent}}%",
       "updateError": "アップデートの確認に失敗しました",
       "updateLatest": "最新バージョンです",
       "updateCheckBtn": "アップデートを確認",
+      "updateNeedInstall": "先に Hanako をアプリケーションフォルダに移動してください",
+      "updateDiskSpace": "ディスク容量不足のため、アップデートをダウンロードできません",
       "betaUpdates": "ベータ版アップデートを受け取る"
     },
     "me": {

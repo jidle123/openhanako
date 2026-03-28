@@ -523,13 +523,15 @@
       "updateAvailable": "有新版本可用：v{{version}}",
       "updateDownload": "下載",
       "updateChecking": "正在檢查更新…",
-      "updateDownloading": "正在下載 v{{version}}…",
-      "updateReadyInstall": "v{{version}} 已下載完成",
-      "updateInstall": "立即安裝",
+      "updateDownloading": "{{agentName}}正在準備新家 {{percent}}%",
+      "updateReadyInstall": "v{{version}} 已就緒",
+      "updateInstall": "重新啟動更新",
       "updateProgress": "{{percent}}%",
       "updateError": "檢查更新失敗",
       "updateLatest": "已是最新版本",
       "updateCheckBtn": "檢查更新",
+      "updateNeedInstall": "請先將 Hanako 移動到應用程式資料夾",
+      "updateDiskSpace": "磁碟空間不足，無法下載更新",
       "betaUpdates": "接收測試版更新"
     },
     "me": {

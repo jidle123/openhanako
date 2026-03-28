@@ -13,7 +13,7 @@ const os = require("os");
 const path = require("path");
 const { spawn, execFileSync } = require("child_process");
 const fs = require("fs");
-const { initAutoUpdater, checkForUpdatesAuto, setMainWindow: setUpdaterMainWindow, setUpdateChannel } = require("./auto-updater.cjs");
+const { initAutoUpdater, checkForUpdatesAuto, setMainWindow: setUpdaterMainWindow, setUpdateChannel, getState: getUpdateState } = require("./auto-updater.cjs");
 const { wrapIpcHandler, wrapIpcOn } = require('./ipc-wrapper.cjs');
 
 // macOS/Linux: Electron 从 Dock/Finder 启动时 PATH 只有系统默认值，
@@ -100,6 +100,7 @@ let isQuitting = false;  // 区分关窗口（hide）和真正退出（quit）
 let tray = null;
 let reusedServerPid = null; // 复用已有 server 时记录其 PID，退出时发 SIGTERM
 let isExitingServer = false; // 只有托盘"退出"时才 kill server，其余路径仅关前端
+let _isUpdating = false;  // auto-updater 正在执行 quitAndInstall，before-quit 跳过 server 清理
 let forceQuitApp = false;   // 启动失败等场景需要真正退出，绕过"隐藏保持运行"拦截
 
 // ── 主进程 i18n ──
@@ -653,8 +654,11 @@ function createMainWindow() {
 
   mainWindow = new BrowserWindow(opts);
 
-  // 自动更新：注册 IPC handlers
-  initAutoUpdater(mainWindow);
+  // 自动更新：注册 IPC handlers，注入 server 清理和 _isUpdating flag
+  initAutoUpdater(mainWindow, {
+    shutdownServer,
+    setIsUpdating: (v) => { _isUpdating = v; },
+  });
 
   if (saved?.isMaximized) {
     mainWindow.maximize();
@@ -1553,7 +1557,6 @@ wrapIpcHandler("get-server-port", () => serverPort);
 wrapIpcHandler("get-server-token", () => serverToken);
 wrapIpcHandler("get-app-version", () => app.getVersion());
 // 旧版兼容：check-update 返回 auto-updater 状态中的可用版本信息
-const { getState: getUpdateState } = require("./auto-updater.cjs");
 wrapIpcHandler("check-update", () => {
   const s = getUpdateState();
   if (s.status === "available" || s.status === "downloaded") {
@@ -2204,30 +2207,10 @@ app.on("will-quit", () => {
   }
 });
 
-app.on("before-quit", async (event) => {
-  isQuitting = true;
-  isExitingServer = true; // Cmd+Q 走完全退出路径，连 server 一起关
-
-  // 立刻隐藏所有窗口，让用户感觉已退出，server 清理在后台进行
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.hide();
-  }
-
-  // 完全退出：清理浏览器实例（仅在真正退出时执行，避免隐藏路径打断后台浏览器能力）
-  for (const [sp, view] of _browserViews) {
-    try { view.webContents.close(); } catch {}
-  }
-  _browserViews.clear();
-  _browserWebView = null;
-  _currentBrowserSession = null;
-
-  // 完全退出：同时关闭 server
+async function shutdownServer() {
   if (serverProcess && !serverProcess.killed) {
-    event.preventDefault();
-    console.log("[desktop] 正在关闭 Server...");
-
+    console.log("[desktop] shutdownServer: 正在关闭 owned server...");
     if (process.platform === "win32") {
-      // Windows：用 HTTP 关闭（信号不可靠）
       try {
         await fetch(`http://127.0.0.1:${serverPort}/api/shutdown`, {
           method: "POST",
@@ -2236,30 +2219,20 @@ app.on("before-quit", async (event) => {
         });
       } catch {}
     } else {
-      // macOS/Linux：SIGTERM
       try { serverProcess.kill("SIGTERM"); } catch {}
     }
-
     await new Promise((resolve) => {
       const timeout = setTimeout(() => {
         if (serverProcess && !serverProcess.killed) {
-          serverProcess.kill();
+          try { serverProcess.kill(); } catch {}
         }
         resolve();
       }, 5000);
-
-      serverProcess.on("exit", () => {
-        clearTimeout(timeout);
-        resolve();
-      });
+      serverProcess.on("exit", () => { clearTimeout(timeout); resolve(); });
     });
-
     serverProcess = null;
-    app.quit();
   } else if (reusedServerPid) {
-    // 复用路径：通过 HTTP 接口优雅关闭（跨平台可靠，不依赖信号）
-    event.preventDefault();
-    console.log("[desktop] 正在关闭复用的 Server...");
+    console.log("[desktop] shutdownServer: 正在关闭 reused server...");
     try {
       await fetch(`http://127.0.0.1:${serverPort}/api/shutdown`, {
         method: "POST",
@@ -2267,18 +2240,43 @@ app.on("before-quit", async (event) => {
         signal: AbortSignal.timeout(2000),
       });
     } catch {
-      // HTTP 失败则回退到 kill
       killPid(reusedServerPid);
     }
-
-    // 轮询等待进程退出（最多 5 秒）
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
       try { process.kill(reusedServerPid, 0); } catch { break; }
       await new Promise(r => setTimeout(r, 200));
     }
-    killPid(reusedServerPid, true); // 超时则强制
+    killPid(reusedServerPid, true);
     reusedServerPid = null;
+  }
+}
+
+app.on("before-quit", async (event) => {
+  isQuitting = true;
+
+  // auto-updater 已完成 server 清理，直接放行
+  if (_isUpdating) return;
+
+  isExitingServer = true;
+
+  // 立刻隐藏所有窗口
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.hide();
+  }
+
+  // 清理浏览器实例
+  for (const [sp, view] of _browserViews) {
+    try { view.webContents.close(); } catch {}
+  }
+  _browserViews.clear();
+  _browserWebView = null;
+  _currentBrowserSession = null;
+
+  // server 清理
+  if ((serverProcess && !serverProcess.killed) || reusedServerPid) {
+    event.preventDefault();
+    await shutdownServer();
     app.quit();
   }
 });
