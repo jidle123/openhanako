@@ -36,8 +36,13 @@ export class PreferencesManager {
 
   /** @private 从磁盘读取（仅构造时调用一次） */
   _readFromDisk() {
-    try { return JSON.parse(fs.readFileSync(this._path, "utf-8")); }
-    catch { return {}; }
+    try {
+      return JSON.parse(fs.readFileSync(this._path, "utf-8"));
+    } catch (err) {
+      if (err.code === "ENOENT") return {};
+      console.warn(`[preferences] failed to read ${this._path}: ${err.message}`);
+      return {};
+    }
   }
 
   /** 读取沙盒模式偏好 */

@@ -504,6 +504,8 @@ export class PluginManager {
         this._preferencesManager.setDisabledPlugins(
           disabled.filter(id => id !== pluginId)
         );
+      } else {
+        console.warn("[plugin-manager] removePlugin: preferencesManager unavailable, disabled list not updated");
       }
       return entry.pluginDir;
     });
@@ -522,6 +524,8 @@ export class PluginManager {
         if (!disabled.includes(pluginId)) {
           this._preferencesManager.setDisabledPlugins([...disabled, pluginId]);
         }
+      } else {
+        console.warn("[plugin-manager] disablePlugin: preferencesManager unavailable, preference not persisted");
       }
     });
   }
@@ -535,6 +539,8 @@ export class PluginManager {
         this._preferencesManager.setDisabledPlugins(
           disabled.filter(id => id !== pluginId)
         );
+      } else {
+        console.warn("[plugin-manager] enablePlugin: preferencesManager unavailable, preference not persisted");
       }
       if (entry.trust === "full-access" && entry.source === "community") {
         const allowed = this._preferencesManager?.getAllowFullAccessPlugins() || false;
@@ -542,6 +548,10 @@ export class PluginManager {
           entry.status = "restricted";
           return;
         }
+      }
+      // Guard: unload before re-loading to prevent duplicate tool/command/route registration
+      if (entry.status === "loaded") {
+        await this.unloadPlugin(pluginId);
       }
       try {
         await this._loadPlugin(entry);
@@ -557,6 +567,8 @@ export class PluginManager {
     return this._enqueue(async () => {
       if (this._preferencesManager) {
         this._preferencesManager.setAllowFullAccessPlugins(allow);
+      } else {
+        console.warn("[plugin-manager] setFullAccess: preferencesManager unavailable, preference not persisted");
       }
       for (const entry of this._plugins.values()) {
         if (entry.source !== "community" || entry.trust !== "full-access") continue;
@@ -576,17 +588,6 @@ export class PluginManager {
           entry.status = "restricted";
         }
       }
-    });
-  }
-
-  _isValidPluginDir(dirPath) {
-    const validMarkers = [
-      ...KNOWN_CONTRIBUTION_DIRS,
-      "manifest.json", "index.js", "hooks.json",
-    ];
-    return validMarkers.some(marker => {
-      const p = path.join(dirPath, marker);
-      return fs.existsSync(p);
     });
   }
 
@@ -626,6 +627,35 @@ export class PluginManager {
     this.routeRegistry.delete(pluginId);
 
     entry.status = "unloaded";
+  }
+
+  // ── Public getters (route 层通过这些方法访问，不穿透私有字段) ──
+
+  /** 用户（社区）插件目录 */
+  getUserPluginsDir() {
+    return this._pluginsDirs[this._pluginsDirs.length - 1] || null;
+  }
+
+  /** 是否允许 full-access 社区插件 */
+  getAllowFullAccess() {
+    return this._preferencesManager?.getAllowFullAccessPlugins() || false;
+  }
+
+  /** 检测目录是否为合法插件 */
+  isValidPluginDir(dirPath) {
+    const validMarkers = [
+      ...KNOWN_CONTRIBUTION_DIRS,
+      "manifest.json", "index.js", "hooks.json",
+    ];
+    return validMarkers.some(marker => {
+      const p = path.join(dirPath, marker);
+      return fs.existsSync(p);
+    });
+  }
+
+  /** 获取指定插件的路由 app */
+  getRouteApp(pluginId) {
+    return this.routeRegistry.get(pluginId) || null;
   }
 
   getPlugin(id) { return this._plugins.get(id) || null; }

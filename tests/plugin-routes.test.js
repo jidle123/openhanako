@@ -42,6 +42,7 @@ describe("plugin route proxy", () => {
 
 function mockEngine(overrides = {}) {
   const routeRegistry = new Map();
+  const allowFullAccess = overrides.allowFullAccess ?? false;
   return {
     pluginManager: {
       listPlugins: () => overrides.plugins || [],
@@ -53,11 +54,10 @@ function mockEngine(overrides = {}) {
       setFullAccess: overrides.setFullAccess || vi.fn(),
       getAllConfigSchemas: () => [],
       getConfigSchema: () => null,
-      _pluginsDirs: ["/builtin", "/user"],
-      _isValidPluginDir: () => true,
-      _preferencesManager: overrides.preferencesManager || {
-        getAllowFullAccessPlugins: () => false,
-      },
+      getUserPluginsDir: () => "/user",
+      isValidPluginDir: () => true,
+      getAllowFullAccess: () => allowFullAccess,
+      getRouteApp: (id) => routeRegistry.get(id) || null,
       ...overrides.pm,
     },
   };
@@ -162,17 +162,15 @@ describe("plugin management API", () => {
 
   describe("GET /plugins/settings", () => {
     it("returns allow_full_access setting", async () => {
-      const engine = mockEngine({
-        preferencesManager: { getAllowFullAccessPlugins: () => true },
-      });
+      const engine = mockEngine({ allowFullAccess: true });
       const app = createApp(engine);
       const res = await app.request("/api/plugins/settings");
       expect(res.status).toBe(200);
       expect(await res.json()).toMatchObject({ allow_full_access: true });
     });
 
-    it("defaults to false when preferencesManager missing", async () => {
-      const engine = mockEngine({ preferencesManager: null, pm: { _preferencesManager: null } });
+    it("defaults to false", async () => {
+      const engine = mockEngine({ allowFullAccess: false });
       const app = createApp(engine);
       const res = await app.request("/api/plugins/settings");
       expect(res.status).toBe(200);

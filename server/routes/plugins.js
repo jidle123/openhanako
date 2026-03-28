@@ -90,7 +90,7 @@ export function createPluginsRoute(engine) {
     try {
       const stat = fs.statSync(sourcePath);
       let targetDir;
-      const userPluginsDir = pm._pluginsDirs[pm._pluginsDirs.length - 1];
+      const userPluginsDir = pm.getUserPluginsDir();
       // Ensure plugins directory exists
       fs.mkdirSync(userPluginsDir, { recursive: true });
 
@@ -122,7 +122,7 @@ export function createPluginsRoute(engine) {
         return c.json({ error: "Path must be a .zip file or directory" }, 400);
       }
 
-      if (!pm._isValidPluginDir(targetDir)) {
+      if (!pm.isValidPluginDir(targetDir)) {
         fs.rmSync(targetDir, { recursive: true, force: true });
         return c.json({ error: "Not a valid plugin directory" }, 400);
       }
@@ -171,10 +171,9 @@ export function createPluginsRoute(engine) {
   // ── Global plugin settings ──
   route.get("/plugins/settings", (c) => {
     const pm = engine.pluginManager;
-    const userDir = pm?._pluginsDirs?.[pm._pluginsDirs.length - 1] || "";
     return c.json({
-      allow_full_access: pm?._preferencesManager?.getAllowFullAccessPlugins() || false,
-      plugins_dir: userDir,
+      allow_full_access: pm?.getAllowFullAccess() || false,
+      plugins_dir: pm?.getUserPluginsDir() || "",
     });
   });
 
@@ -198,7 +197,7 @@ export function createPluginsRoute(engine) {
 
   route.all("/plugins/:pluginId/*", async (c) => {
     const pluginId = c.req.param("pluginId");
-    const pluginApp = engine.pluginManager?.routeRegistry.get(pluginId);
+    const pluginApp = engine.pluginManager?.getRouteApp(pluginId);
     if (!pluginApp) return c.json({ error: `Plugin "${pluginId}" not found` }, 404);
     return proxyToPlugin(c, pluginApp, pluginId);
   });

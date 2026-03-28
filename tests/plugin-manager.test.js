@@ -828,21 +828,21 @@ describe("hot operations", () => {
     expect(pm.getPlugin("fa-disabled").status).toBe("disabled");
   });
 
-  it("_isValidPluginDir detects valid plugin directories", async () => {
+  it("isValidPluginDir detects valid plugin directories", async () => {
     const pm = new PluginManager({ pluginsDir, dataDir, bus: await makeBus() });
 
     const validDir = path.join(pluginsDir, "valid-check");
     fs.mkdirSync(path.join(validDir, "tools"), { recursive: true });
-    expect(pm._isValidPluginDir(validDir)).toBe(true);
+    expect(pm.isValidPluginDir(validDir)).toBe(true);
 
     const manifestDir = path.join(pluginsDir, "manifest-check");
     fs.mkdirSync(manifestDir, { recursive: true });
     fs.writeFileSync(path.join(manifestDir, "manifest.json"), "{}");
-    expect(pm._isValidPluginDir(manifestDir)).toBe(true);
+    expect(pm.isValidPluginDir(manifestDir)).toBe(true);
 
     const emptyDir = path.join(pluginsDir, "empty-check");
     fs.mkdirSync(emptyDir, { recursive: true });
-    expect(pm._isValidPluginDir(emptyDir)).toBe(false);
+    expect(pm.isValidPluginDir(emptyDir)).toBe(false);
   });
 
   it("operations are serialized through the queue", async () => {
