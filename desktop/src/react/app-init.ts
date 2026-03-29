@@ -32,6 +32,11 @@ declare function t(key: string, vars?: Record<string, string | number>): string;
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- 全局 bootstrap：platform/IPC callback 签名含 any */
 
+// Race guard: rapid agent switches (A→B→C) can cause stale async responses
+// from earlier switches to overwrite current state. Same pattern as
+// _switchVersion in session-actions.ts.
+let _agentSwitchVersion = 0;
+
 // ── __hanaLog：前端日志上报 ──
 window.__hanaLog = function (level: string, module: string, message: string) {
   const { serverPort } = useStore.getState();
@@ -152,7 +157,9 @@ export async function initApp(): Promise<void> {
   // 19. 设置变更监听
   platform.onSettingsChanged((type: string, data: any) => {
     switch (type) {
-      case 'agent-switched':
+      case 'agent-switched': {
+        const myVersion = ++_agentSwitchVersion;
+
         applyAgentIdentity({
           agentName: data.agentName,
           agentId: data.agentId,
@@ -179,6 +186,7 @@ export async function initApp(): Promise<void> {
 
         // Reload desk files, homeFolder, cwdHistory
         hanaFetch('/api/config').then(r => r.json()).then((cfg: any) => {
+          if (myVersion !== _agentSwitchVersion) return; // stale
           useStore.setState({
             homeFolder: cfg.deskHome || null,
             cwdHistory: cfg.cwdHistory || [],
@@ -188,10 +196,12 @@ export async function initApp(): Promise<void> {
 
         // Reload automation count and clear activities
         hanaFetch('/api/desk/cron').then(r => r.json()).then((d: any) => {
+          if (myVersion !== _agentSwitchVersion) return; // stale
           useStore.setState({ automationCount: d.jobs?.length || 0 });
         }).catch(() => {});
         useStore.setState({ activities: [] });
         break;
+      }
       case 'skills-changed':
         window.__loadDeskSkills?.();
         break;
