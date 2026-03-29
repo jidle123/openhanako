@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { Hono } from "hono";
 import { safeReadFile } from "../../shared/safe-fs.js";
+import { resolveAgent } from "../utils/resolve-agent.js";
 
 /** 安全路径校验：resolved 必须在 allowedRoots 之一内部 */
 function isSafePath(filePath, allowedRoots) {
@@ -25,10 +26,10 @@ export function createFsRoute(engine) {
   const hanakoHome = path.resolve(engine.hanakoHome);
 
   // 收集允许的根目录
-  function getAllowedRoots() {
+  function getAllowedRoots(c) {
     const roots = [hanakoHome];
     // desk 工作空间目录（用户可能配在 ~/.hanako 外面）
-    const deskHome = engine.agent?.deskManager?.homePath;
+    const deskHome = resolveAgent(engine, c)?.deskManager?.homePath;
     if (deskHome) roots.push(path.resolve(deskHome));
     return roots;
   }
@@ -37,7 +38,7 @@ export function createFsRoute(engine) {
   route.get("/fs/read", async (c) => {
     const filePath = c.req.query("path");
     if (!filePath) return c.json({ error: "missing path" }, 400);
-    if (!isSafePath(filePath, getAllowedRoots())) {
+    if (!isSafePath(filePath, getAllowedRoots(c))) {
       return c.json({ error: "path not allowed" }, 403);
     }
     const content = safeReadFile(filePath, null);
@@ -49,7 +50,7 @@ export function createFsRoute(engine) {
   route.get("/fs/read-base64", async (c) => {
     const filePath = c.req.query("path");
     if (!filePath) return c.json({ error: "missing path" }, 400);
-    if (!isSafePath(filePath, getAllowedRoots())) {
+    if (!isSafePath(filePath, getAllowedRoots(c))) {
       return c.json({ error: "path not allowed" }, 403);
     }
     try {
@@ -64,7 +65,7 @@ export function createFsRoute(engine) {
   route.get("/fs/docx-html", async (c) => {
     const filePath = c.req.query("path");
     if (!filePath) return c.json({ error: "missing path" }, 400);
-    if (!isSafePath(filePath, getAllowedRoots())) {
+    if (!isSafePath(filePath, getAllowedRoots(c))) {
       return c.json({ error: "path not allowed" }, 403);
     }
     try {
