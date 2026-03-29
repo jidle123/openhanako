@@ -14,6 +14,7 @@ const CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4 小时
 let _mainWindow = null;
 let _shutdownServer = null; // 由 main.cjs 注入
 let _setIsUpdating = null;  // 由 main.cjs 注入
+let _hanakoHome = null;     // 由 main.cjs 注入
 let _checkTimer = null;
 
 // ── 状态管理（保持与前端 AutoUpdateState 契约一致）──
@@ -72,8 +73,28 @@ function isRunningFromDmg() {
 // ── 缓存清理 ──
 
 async function cleanUpdateCache() {
-  const dataDir = process.env.HANAKO_HOME || path.join(require("os").homedir(), ".hanako-dev");
+  const dataDir = _hanakoHome;
   const versionFile = path.join(dataDir, "last-update-version");
+
+  // 迁移：旧版 bug 把 last-update-version 写到了 ~/.hanako-dev/（生产环境误用）
+  // 搬过来后尝试清理孤儿目录
+  try {
+    const wrongDir = path.join(require("os").homedir(), ".hanako-dev");
+    if (wrongDir !== dataDir) {
+      const wrongFile = path.join(wrongDir, "last-update-version");
+      if (fs.existsSync(wrongFile)) {
+        if (!fs.existsSync(versionFile)) {
+          fs.mkdirSync(path.dirname(versionFile), { recursive: true });
+          fs.renameSync(wrongFile, versionFile);
+        } else {
+          fs.unlinkSync(wrongFile);
+        }
+        // 目录空了就删掉
+        try { fs.rmdirSync(wrongDir); } catch {} // rmdirSync 非空会失败，正好
+        console.log("[auto-updater] 已清理旧版误写的 ~/.hanako-dev/last-update-version");
+      }
+    }
+  } catch {}
   const currentVersion = app.getVersion();
 
   let shouldClean = false;
@@ -250,10 +271,11 @@ function startPolling() {
 
 // ── 公共 API ──
 
-function initAutoUpdater(mainWindow, { shutdownServer, setIsUpdating } = {}) {
+function initAutoUpdater(mainWindow, { shutdownServer, setIsUpdating, hanakoHome } = {}) {
   _mainWindow = mainWindow;
   _shutdownServer = shutdownServer;
   _setIsUpdating = setIsUpdating;
+  _hanakoHome = hanakoHome;
 
   // 开发环境不初始化 auto-updater
   if (!app.isPackaged) {

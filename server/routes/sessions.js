@@ -220,7 +220,7 @@ export function createSessionsRoute(engine) {
     } catch (err) {
       const errDetail = `${err.message}\n${err.stack || ""}`;
       console.error("[sessions/switch] error:", errDetail);
-      try { require("fs").appendFileSync(require("path").join(require("os").homedir(), ".hanako", "switch-error.log"), `${new Date().toISOString()}\n${errDetail}\n---\n`); } catch {}
+      try { require("fs").appendFileSync(require("path").join(engine.hanakoHome, "switch-error.log"), `${new Date().toISOString()}\n${errDetail}\n---\n`); } catch {}
       return c.json({ error: err.message }, 500);
     }
   });

@@ -85,8 +85,9 @@ await engine.init((msg) => console.log(`[server] ${msg}`));
 console.log("[server] ② engine.init 完成");
 dlog.log("server", "engine initialized");
 
-// 注入 session 解析器给 BrowserManager（避免循环依赖）
+// 注入依赖给 BrowserManager（避免循环依赖）
 import { BrowserManager } from "../lib/browser/browser-manager.js";
+BrowserManager.setHanakoHome(engine.hanakoHome);
 BrowserManager.setSessionResolver(() => engine.currentSessionPath);
 
 if (engine.currentModel) {
@@ -284,7 +285,7 @@ try {
     bm.setWsTransport(ws);
 
     // 调试：记录浏览器 WS 消息往返
-    const _bwsLog = (line) => { try { fs.appendFileSync(path.join(os.homedir(), ".hanako", "browser-ws.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
+    const _bwsLog = (line) => { try { fs.appendFileSync(path.join(hanakoHome, "browser-ws.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
     _bwsLog("browser WS connected");
     const origSend = ws.send.bind(ws);
     ws.send = function(data, ...args) {

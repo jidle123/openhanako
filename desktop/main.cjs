@@ -658,6 +658,7 @@ function createMainWindow() {
   initAutoUpdater(mainWindow, {
     shutdownServer,
     setIsUpdating: (v) => { _isUpdating = v; },
+    hanakoHome,
   });
 
   if (saved?.isMaximized) {
@@ -1484,7 +1485,7 @@ function setupBrowserCommands() {
       try { msg = JSON.parse(data); } catch { return; }
       if (msg?.type !== "browser-cmd") return;
       const { id, cmd, params } = msg;
-      const _bLog = (line) => { try { require("fs").appendFileSync(require("path").join(require("os").homedir(), ".hanako", "browser-cmd.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
+      const _bLog = (line) => { try { require("fs").appendFileSync(require("path").join(hanakoHome, "browser-cmd.log"), `${new Date().toISOString()} ${line}\n`); } catch {} };
       _bLog(`→ received cmd=${cmd} id=${id}`);
       try {
         const result = await handleBrowserCommand(cmd, params || {});
