@@ -220,7 +220,22 @@ export function handleServerMessage(msg: any): void {
     }
 
     case 'browser_bg_status': {
-      useStore.setState({ browserRunning: !!msg.running });
+      const bgSp = msg.sessionPath || state.currentSessionPath;
+      if (bgSp) {
+        useStore.setState(s => ({
+          browserBySession: {
+            ...s.browserBySession,
+            [bgSp]: {
+              ...(s.browserBySession[bgSp] || { running: false, url: null, thumbnail: null }),
+              running: !!msg.running,
+            },
+          },
+        }));
+      }
+      // Compat: only update global for current session
+      if (!msg.sessionPath || msg.sessionPath === state.currentSessionPath) {
+        useStore.setState({ browserRunning: !!msg.running });
+      }
       break;
     }
 
