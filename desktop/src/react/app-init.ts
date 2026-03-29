@@ -13,7 +13,8 @@ import { applyAgentIdentity, loadAgents, loadAvatars } from './stores/agent-acti
 import { loadSessions } from './stores/session-actions';
 import { connectWebSocket } from './services/websocket';
 import { setStatus, loadModels } from './utils/ui-helpers';
-import { initJian } from './stores/desk-actions';
+import { initJian, loadDeskFiles } from './stores/desk-actions';
+import { loadChannels } from './stores/channel-actions';
 import { initEditorEvents } from './stores/artifact-actions';
 import { updateLayout } from './components/SidebarLayout';
 import { initErrorBusBridge } from './errors/error-bus-bridge';
@@ -158,6 +159,38 @@ export async function initApp(): Promise<void> {
         });
         loadSessions();
         window.__loadDeskSkills?.();
+
+        // Reset channel state for new agent
+        useStore.setState({
+          currentChannel: null,
+          channelMessages: [],
+          channelMembers: [],
+          channelTotalUnread: 0,
+          channelHeaderName: '',
+          channelHeaderMembersText: '',
+          channelInfoName: '',
+          channelIsDM: false,
+        });
+        loadChannels();
+
+        // Reload models and reset thinking level
+        loadModels();
+        useStore.setState({ thinkingLevel: 'auto' });
+
+        // Reload desk files, homeFolder, cwdHistory
+        hanaFetch('/api/config').then(r => r.json()).then((cfg: any) => {
+          useStore.setState({
+            homeFolder: cfg.deskHome || null,
+            cwdHistory: cfg.cwdHistory || [],
+          });
+          loadDeskFiles('', cfg.deskHome || undefined);
+        }).catch(() => {});
+
+        // Reload automation count and clear activities
+        hanaFetch('/api/desk/cron').then(r => r.json()).then((d: any) => {
+          useStore.setState({ automationCount: d.jobs?.length || 0 });
+        }).catch(() => {});
+        useStore.setState({ activities: [] });
         break;
       case 'skills-changed':
         window.__loadDeskSkills?.();
