@@ -409,7 +409,8 @@ export class ProviderRegistry {
 
   /**
    * 读取 provider 的凭证信息（apiKey, baseUrl, api）
-   * 从 added-models.yaml 读取用户配置值，baseUrl/api 不存在时回退到插件默认值
+   * 从 added-models.yaml 读取用户配置值，baseUrl/api 不存在时回退到插件默认值。
+   * OAuth provider 若 YAML 无 api_key，自动从 auth.json 补全 access token。
    * @param {string} providerId
    * @returns {{ apiKey: string, baseUrl: string, api: string } | null}
    */
@@ -419,11 +420,43 @@ export class ProviderRegistry {
     if (!uc) return null;
 
     const plugin = this._plugins.get(providerId);
+    let apiKey = uc.api_key || "";
+
+    // OAuth provider: YAML 没有 api_key，从 auth.json 取 access token
+    if (!apiKey) {
+      const authType = uc.auth_type || plugin?.authType;
+      if (authType === "oauth") {
+        const authJsonKey = plugin?.authJsonKey || providerId;
+        apiKey = this._readOAuthToken(authJsonKey);
+      }
+    }
+
     return {
-      apiKey: uc.api_key || "",
+      apiKey,
       baseUrl: uc.base_url || plugin?.defaultBaseUrl || "",
       api: uc.api || plugin?.defaultApi || "",
     };
+  }
+
+  /**
+   * 从 auth.json 读取 OAuth access token
+   * @private
+   * @param {string} authJsonKey - auth.json 中的 key
+   * @returns {string}
+   */
+  _readOAuthToken(authJsonKey) {
+    try {
+      const authPath = path.join(this._hanakoHome, "auth.json");
+      const entry = JSON.parse(fs.readFileSync(authPath, "utf-8"))?.[authJsonKey];
+      if (!entry) return "";
+      if (typeof entry === "string") return entry;
+      if (typeof entry.access === "string") return entry.access;
+      if (typeof entry.apiKey === "string") return entry.apiKey;
+      if (typeof entry.token === "string") return entry.token;
+      return "";
+    } catch {
+      return "";
+    }
   }
 
   /**

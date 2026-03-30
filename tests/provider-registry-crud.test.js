@@ -91,6 +91,100 @@ describe("getCredentials", () => {
     expect(creds.baseUrl).toBe("https://api.test.com/v1");
     expect(creds.api).toBe("openai-completions");
   });
+
+  it("OAuth provider 无 api_key 时从 auth.json 取 access token", () => {
+    // 写 auth.json
+    const authPath = path.join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, JSON.stringify({
+      "test-oauth-key": {
+        type: "oauth",
+        access: "oauth-access-token-abc",
+        refresh: "refresh-xyz",
+        expires: Date.now() + 3600_000,
+      },
+    }), "utf-8");
+
+    writeAddedModels({
+      "test-oauth": {
+        models: [{ id: "model-a" }],
+      },
+    });
+
+    const reg = new ProviderRegistry(tmpDir);
+    reg._plugins.clear();
+    reg._entries.clear();
+    reg._plugins.set("test-oauth", {
+      id: "test-oauth",
+      displayName: "Test OAuth",
+      authType: "oauth",
+      defaultBaseUrl: "https://api.test.com/v1",
+      defaultApi: "openai-completions",
+      authJsonKey: "test-oauth-key",
+    });
+
+    const creds = reg.getCredentials("test-oauth");
+    expect(creds.apiKey).toBe("oauth-access-token-abc");
+    expect(creds.baseUrl).toBe("https://api.test.com/v1");
+    expect(creds.api).toBe("openai-completions");
+  });
+
+  it("API Key provider 不走 auth.json（即使 auth.json 有同名条目）", () => {
+    const authPath = path.join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, JSON.stringify({
+      "test-provider": { access: "should-not-use-this" },
+    }), "utf-8");
+
+    writeAddedModels({
+      "test-provider": {
+        api_key: "sk-real-key",
+      },
+    });
+
+    const reg = makeRegistry(); // authType: "api-key"
+    const creds = reg.getCredentials("test-provider");
+    expect(creds.apiKey).toBe("sk-real-key");
+  });
+
+  it("API Key provider 无 api_key 时不从 auth.json 补（两条路独立）", () => {
+    const authPath = path.join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, JSON.stringify({
+      "test-provider": { access: "leaked-token" },
+    }), "utf-8");
+
+    writeAddedModels({
+      "test-provider": {
+        // 没有 api_key
+        models: ["m1"],
+      },
+    });
+
+    const reg = makeRegistry(); // authType: "api-key"
+    const creds = reg.getCredentials("test-provider");
+    expect(creds.apiKey).toBe(""); // 不会读到 auth.json 的 leaked-token
+  });
+
+  it("OAuth provider auth.json 无对应条目时 apiKey 为空", () => {
+    // auth.json 存在但没有对应 key
+    const authPath = path.join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, JSON.stringify({}), "utf-8");
+
+    writeAddedModels({ "test-oauth": { models: ["m1"] } });
+
+    const reg = new ProviderRegistry(tmpDir);
+    reg._plugins.clear();
+    reg._entries.clear();
+    reg._plugins.set("test-oauth", {
+      id: "test-oauth",
+      displayName: "Test OAuth",
+      authType: "oauth",
+      defaultBaseUrl: "https://api.test.com/v1",
+      defaultApi: "openai-completions",
+      authJsonKey: "test-oauth-key",
+    });
+
+    const creds = reg.getCredentials("test-oauth");
+    expect(creds.apiKey).toBe("");
+  });
 });
 
 // ── getProviderModels ────────────────────────────────────────────────────────
