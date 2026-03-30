@@ -1,7 +1,7 @@
 # Community Plugin Development Guide
 
 > This document is for community developers who want to build user-installable plugins.
-> For system plugins (built-in features bundled with the app), see `.docs/SYSTEM-PLUGINS.md`.
+> System plugins (built-in features) use the same plugin format, placed in the project's `plugins/` directory and bundled with the app.
 
 ## Quick Start
 
@@ -144,8 +144,23 @@ export async function execute(input, toolCtx) {  // required
 }
 ```
 
-- Automatically namespaced: `pluginId.name`
+- Automatically namespaced: `pluginId_name` (e.g. `my-plugin_search`)
 - Restricted plugins' `toolCtx.bus` only has `emit/subscribe/request`, not `handle`
+
+#### Media Delivery
+
+When a tool needs to deliver files, declare `media` in the return value's `details`:
+
+```js
+return {
+  content: [{ type: "text", text: "Image generated" }],
+  details: {
+    media: { mediaUrls: ["/path/to/image.png"] },
+  },
+};
+```
+
+The framework automatically extracts `details.media.mediaUrls` and delivers them according to context (desktop renders file cards, bridge sends to the other party). The tool itself doesn't need to be aware of the runtime environment.
 
 ### Skills (Knowledge Injection)
 
@@ -227,7 +242,7 @@ export function register(app, ctx) {
 }
 ```
 
-All three patterns are backward-compatible: plugins that don't use ctx need no changes. `ctx.bus` can directly call built-in session operations: `session:send`, `session:abort`, `session:history`, `session:list`, `agent:list`. See the Route Context and Session Bus Handlers sections in `.docs/PLUGIN-DEV.md` for the full API.
+All three patterns are backward-compatible: plugins that don't use ctx need no changes. `ctx.bus` can directly call built-in session operations: `session:send`, `session:abort`, `session:history`, `session:list`, `agent:list`. See the Route Context and Session Bus Handlers sections below for the full API.
 
 ### Extensions (Pi SDK Event Interception) ⚡ full-access
 
@@ -411,7 +426,7 @@ this.register(this.ctx.registerTool({
 }));
 ```
 
-Tool names are auto-prefixed with `pluginId.` and auto-removed on unload via `register()`.
+Tool names are auto-prefixed with `pluginId_` and auto-removed on unload via `register()`.
 
 ## Forward Compatibility
 

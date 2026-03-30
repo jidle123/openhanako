@@ -1,7 +1,7 @@
 # 社区插件开发指南
 
 > 本文档面向社区开发者，描述如何开发用户可安装的插件。
-> 系统插件（内嵌到 app 的内置功能）开发见 `.docs/SYSTEM-PLUGINS.md`。
+> 系统插件（内嵌到 app 的内置功能）使用相同的插件格式，放在项目 `plugins/` 目录下随 app 打包分发。
 
 ## 快速开始
 
@@ -144,8 +144,23 @@ export async function execute(input, toolCtx) {  // 必须
 }
 ```
 
-- 自动加命名空间前缀：`pluginId.name`
+- 自动加命名空间前缀：`pluginId_name`（如 `my-plugin_search`）
 - restricted 插件的 `toolCtx.bus` 只有 `emit/subscribe/request`，没有 `handle`
+
+#### 媒体交付
+
+工具需要交付文件时，在返回值的 `details` 中声明 `media`：
+
+```js
+return {
+  content: [{ type: "text", text: "已生成图片" }],
+  details: {
+    media: { mediaUrls: ["/path/to/image.png"] },
+  },
+};
+```
+
+框架会自动提取 `details.media.mediaUrls` 并根据上下文投递（桌面渲染文件卡片，bridge 发送给对方）。工具本身不需要感知运行环境。
 
 ### Skills（知识注入）
 
@@ -227,7 +242,7 @@ export function register(app, ctx) {
 }
 ```
 
-三种写法向后兼容：不使用 ctx 的老插件无需改动。`ctx.bus` 可直接调用内置 session 操作：`session:send`、`session:abort`、`session:history`、`session:list`、`agent:list`。完整 API 见 `.docs/PLUGIN-DEV.md` 的 Route Context 和 Session Bus Handlers 章节。
+三种写法向后兼容：不使用 ctx 的老插件无需改动。`ctx.bus` 可直接调用内置 session 操作：`session:send`、`session:abort`、`session:history`、`session:list`、`agent:list`。详见下方 Route Context 和 Session Bus Handlers 章节。
 
 ### Extensions（Pi SDK 事件拦截）⚡ full-access
 
@@ -411,7 +426,7 @@ this.register(this.ctx.registerTool({
 }));
 ```
 
-工具名自动加 `pluginId.` 前缀，通过 `register()` 在卸载时自动移除。
+工具名自动加 `pluginId_` 前缀，通过 `register()` 在卸载时自动移除。
 
 ## 前向兼容
 
