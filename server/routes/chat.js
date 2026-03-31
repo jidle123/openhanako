@@ -298,15 +298,19 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
         details: event.result?.details,
       });
 
-      // Plugin Card: auto-emit card from tool result
+      // Plugin Card: emit directly (same pattern as file_output)
       if (event.result?.details?.card) {
         const c = event.result.details.card;
-        const attrs = { type: c.type || "iframe", plugin: c.pluginId || "", route: c.route || "", title: c.title };
-        emitStreamEvent(sessionPath, ss, { type: "card_start", attrs });
-        if (c.description) {
-          emitStreamEvent(sessionPath, ss, { type: "card_text", delta: c.description });
-        }
-        emitStreamEvent(sessionPath, ss, { type: "card_end" });
+        emitStreamEvent(sessionPath, ss, {
+          type: "plugin_card",
+          card: {
+            type: c.type || "iframe",
+            pluginId: c.pluginId || "",
+            route: c.route || "",
+            title: c.title,
+            description: c.description || "",
+          },
+        });
       }
 
       // COMPAT(v0.78): present_files → stage_files, remove after v0.90

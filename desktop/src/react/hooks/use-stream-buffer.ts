@@ -324,6 +324,15 @@ class StreamBufferManager {
         }));
         break;
 
+      case 'plugin_card':
+        this.ensureMessage(buf);
+        this.flush(buf);
+        useStore.getState().updateLastMessage(sessionPath, (m) => ({
+          ...m,
+          blocks: [...(m.blocks || []), { type: 'plugin_card', card: msg.card }],
+        }));
+        break;
+
       case 'artifact':
         this.ensureMessage(buf);
         this.flush(buf);
