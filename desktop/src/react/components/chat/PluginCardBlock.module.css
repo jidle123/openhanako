@@ -38,3 +38,10 @@
   border: none;
   transition: opacity 0.2s ease;
 }
+.description {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

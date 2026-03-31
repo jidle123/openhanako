@@ -8,20 +8,25 @@ interface Props { card: PluginCardDetails; }
 export function PluginCardBlock({ card }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
+
+  // V2: type dispatch — only iframe for now, unknown types show description
+  const isIframe = !card.type || card.type === 'iframe';
 
   const src = (() => {
+    if (!isIframe) return '';
     const theme = document.documentElement.dataset.theme || 'warm-paper';
     const cssUrl = hanaUrl(`/api/plugins/theme.css?theme=${encodeURIComponent(theme)}`);
     const base = hanaUrl(`/api/plugins/${card.pluginId}${card.route}`);
     const sep = base.includes('?') ? '&' : '?';
     const params = new URLSearchParams();
-    if (card.data) params.set('data', JSON.stringify(card.data));
     params.set('hana-theme', theme);
     params.set('hana-css', cssUrl);
     return `${base}${sep}${params}`;
   })();
 
   useEffect(() => {
+    if (!isIframe) return;
     const onMessage = (e: MessageEvent) => {
       if (e.data?.type === 'ready') setReady(true);
       if (e.data?.type === 'resize-request' && typeof e.data.payload?.height === 'number') {
@@ -32,10 +37,17 @@ export function PluginCardBlock({ card }: Props) {
     window.addEventListener('message', onMessage);
     const timeout = setTimeout(() => setReady(true), 5000);
     return () => { window.removeEventListener('message', onMessage); clearTimeout(timeout); };
-  }, []);
+  }, [isIframe]);
 
-  // V1: only handle iframe type. Future types (inline, etc.) fall through to nothing.
-  if (card.type && card.type !== 'iframe') return null;
+  // Degradation: unknown type or error → show description
+  if (!isIframe || error) {
+    return (
+      <div className={s.container}>
+        {card.title && <div className={s.title}>{card.title}</div>}
+        <div className={s.description}>{card.description}</div>
+      </div>
+    );
+  }
 
   return (
     <div className={s.container}>
@@ -47,6 +59,7 @@ export function PluginCardBlock({ card }: Props) {
           src={src}
           sandbox="allow-scripts"
           style={{ opacity: ready ? 1 : 0.3 }}
+          onError={() => setError(true)}
         />
       </div>
     </div>

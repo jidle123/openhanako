@@ -112,12 +112,11 @@ export type TabType = 'chat' | 'channels' | `plugin:${string}`;
 // ── Plugin Card Protocol ──
 
 export interface PluginCardDetails {
-  type?: string;       // "iframe" | future types, defaults to "iframe"
+  type: string;         // "iframe" | future types
   pluginId: string;
   route: string;
-  data?: Record<string, unknown>;
-  height?: number;
   title?: string;
+  description: string;  // IM fallback / degradation text
 }
 
 // ── 插件 UI 信息 ──
