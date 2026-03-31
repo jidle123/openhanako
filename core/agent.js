@@ -353,7 +353,7 @@ export class Agent {
         if (!this._engine) throw new Error("subagent 调用失败：engine 未初始化");
         return this._engine.executeIsolated(prompt, opts);
       },
-      resolveUtilityModel: () => this._memoryModel || this._utilityModel || this._engine?.currentModel?.id || null,
+      resolveUtilityModel: () => this._engine?.currentModel?.id || null,
       readOnlyBuiltinTools: READ_ONLY_BUILTIN_TOOLS,
     });
 
