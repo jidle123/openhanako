@@ -581,6 +581,16 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
         contextWindow: usage?.contextWindow ?? null,
         percent: usage?.percent ?? null,
       });
+    } else if (event.type === "deferred_result") {
+      if (!ss) return;
+      emitStreamEvent(sessionPath, ss, {
+        type: "deferred_result",
+        taskId: event.taskId,
+        status: event.status,
+        result: event.result,
+        reason: event.reason,
+        meta: event.meta,
+      });
     }
   });
 
