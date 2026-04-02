@@ -9,23 +9,24 @@ import { MessageActions } from './MessageActions';
 const lazyScreenshot = () => import('../../utils/screenshot').then(m => m.takeScreenshot);
 import type { ChatMessage, UserAttachment, DeskContext, ContentBlock } from '../../stores/chat-types';
 import { useStore } from '../../stores';
+import { selectIsStreamingSession, selectSelectedIdsBySession } from '../../stores/session-selectors';
 import styles from './Chat.module.css';
 import badgeStyles from '../input/SkillBadgeView.module.css';
 
 interface Props {
   message: ChatMessage;
   showAvatar: boolean;
+  sessionPath: string;
 }
 
-export const UserMessage = memo(function UserMessage({ message, showAvatar }: Props) {
+export const UserMessage = memo(function UserMessage({ message, showAvatar, sessionPath }: Props) {
   const userAvatarUrl = useStore(s => s.userAvatarUrl);
   const t = window.t ?? ((p: string) => p);
   const userName = useStore(s => s.userName) || t('common.me');
   const [avatarFailed, setAvatarFailed] = useState(false);
 
-  const sessionPath = useStore(s => s.currentSessionPath) || '';
-  const isStreaming = useStore(s => s.streamingSessions.includes(sessionPath));
-  const selectedIds = useStore(s => s.selectedIdsBySession[sessionPath] || []);
+  const isStreaming = useStore(s => selectIsStreamingSession(s, sessionPath));
+  const selectedIds = useStore(s => selectSelectedIdsBySession(s, sessionPath));
   const isSelected = selectedIds.includes(message.id);
 
   const [copied, setCopied] = useState(false);
@@ -36,12 +37,10 @@ export const UserMessage = memo(function UserMessage({ message, showAvatar }: Pr
 
   const handleCopy = useCallback(() => {
     const state = useStore.getState();
-    const sp = state.currentSessionPath;
-    if (!sp) return;
-    const ids = state.selectedIdsBySession[sp] || [];
+    const ids = selectSelectedIdsBySession(state, sessionPath);
 
     if (ids.length > 0) {
-      const session = state.chatSessions[sp];
+      const session = state.chatSessions[sessionPath];
       if (!session) return;
       const texts: string[] = [];
       for (const item of session.items) {
@@ -72,12 +71,12 @@ export const UserMessage = memo(function UserMessage({ message, showAvatar }: Pr
         setTimeout(() => setCopied(false), 1500);
       }).catch(() => {});
     }
-  }, [message.text]);
+  }, [message.text, sessionPath]);
 
   const handleScreenshot = useCallback(async () => {
     const fn = await lazyScreenshot();
-    fn(message.id);
-  }, [message.id]);
+    fn(message.id, sessionPath);
+  }, [message.id, sessionPath]);
 
   return (
     <div className={`${styles.messageGroup} ${styles.messageGroupUser}${isSelected ? ` ${styles.messageGroupSelected}` : ''}`}

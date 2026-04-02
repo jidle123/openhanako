@@ -190,6 +190,7 @@ const Panel = memo(function Panel({ path, active }: { path: string; active: bool
             key={item.type === 'message' ? item.data.id : `c-${i}`}
             item={item}
             prevItem={i > 0 ? items[i - 1] : undefined}
+            sessionPath={path}
             agentId={sessionAgentId}
           />
         ))}
@@ -230,9 +231,10 @@ function ScrollToBottomBtn() {
 
 // ── ItemView ──
 
-const ItemView = memo(function ItemView({ item, prevItem, agentId }: {
+const ItemView = memo(function ItemView({ item, prevItem, sessionPath, agentId }: {
   item: ChatListItem;
   prevItem?: ChatListItem;
+  sessionPath: string;
   agentId?: string | null;
 }) {
   if (item.type === 'compaction') return null;
@@ -240,7 +242,7 @@ const ItemView = memo(function ItemView({ item, prevItem, agentId }: {
   const prevRole = prevItem?.type === 'message' ? prevItem.data.role : null;
   const showAvatar = msg.role !== prevRole;
   if (msg.role === 'user') {
-    return <UserMessage message={msg} showAvatar={showAvatar} />;
+    return <UserMessage message={msg} showAvatar={showAvatar} sessionPath={sessionPath} />;
   }
-  return <AssistantMessage message={msg} showAvatar={showAvatar} agentId={agentId} />;
+  return <AssistantMessage message={msg} showAvatar={showAvatar} sessionPath={sessionPath} agentId={agentId} />;
 });

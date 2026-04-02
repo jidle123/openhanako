@@ -117,6 +117,7 @@ export interface PluginCardDetails {
   route: string;
   title?: string;
   description: string;  // IM fallback / degradation text
+  aspectRatio?: string;
 }
 
 // ── 插件 UI 信息 ──

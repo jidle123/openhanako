@@ -18,6 +18,7 @@ import { useStore } from '../../stores';
 import { hanaFetch, hanaUrl } from '../../hooks/use-hana-fetch';
 import { openFilePreview, openSkillPreview } from '../../utils/file-preview';
 import { openPreview } from '../../stores/artifact-actions';
+import { selectIsStreamingSession, selectSelectedIdsBySession } from '../../stores/session-selectors';
 import styles from './Chat.module.css';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -25,16 +26,16 @@ import styles from './Chat.module.css';
 interface Props {
   message: ChatMessage;
   showAvatar: boolean;
+  sessionPath: string;
   agentId?: string | null;
 }
 
-export const AssistantMessage = memo(function AssistantMessage({ message, showAvatar, agentId }: Props) {
+export const AssistantMessage = memo(function AssistantMessage({ message, showAvatar, sessionPath, agentId }: Props) {
   const agents = useStore(s => s.agents);
   const globalAgentName = useStore(s => s.agentName) || 'Hanako';
   const globalYuan = useStore(s => s.agentYuan) || 'hanako';
-  const sessionPath = useStore(s => s.currentSessionPath) || '';
-  const isStreaming = useStore(s => s.streamingSessions.includes(sessionPath));
-  const selectedIds = useStore(s => s.selectedIdsBySession[sessionPath] || []);
+  const isStreaming = useStore(s => selectIsStreamingSession(s, sessionPath));
+  const selectedIds = useStore(s => selectSelectedIdsBySession(s, sessionPath));
   const isSelected = selectedIds.includes(message.id);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
@@ -59,15 +60,11 @@ export const AssistantMessage = memo(function AssistantMessage({ message, showAv
 
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    // Use getState() for event handler — avoids stale closure, reads fresh state at call time
     const state = useStore.getState();
-    const sp = state.currentSessionPath;
-    if (!sp) return;
-    const ids = state.selectedIdsBySession[sp] || [];
+    const ids = selectSelectedIdsBySession(state, sessionPath);
 
     if (ids.length > 0) {
-      // batch copy: gather text from all selected messages in order
-      const session = state.chatSessions[sp];
+      const session = state.chatSessions[sessionPath];
       if (!session) return;
       const texts: string[] = [];
       for (const item of session.items) {
@@ -105,12 +102,12 @@ export const AssistantMessage = memo(function AssistantMessage({ message, showAv
         setTimeout(() => setCopied(false), 1500);
       }).catch(() => {});
     }
-  }, [blocks]);
+  }, [blocks, sessionPath]);
 
   const handleScreenshot = useCallback(async () => {
     const fn = await lazyScreenshot();
-    fn(message.id);
-  }, [message.id]);
+    fn(message.id, sessionPath);
+  }, [message.id, sessionPath]);
 
   return (
     <div className={`${styles.messageGroup} ${styles.messageGroupAssistant}${isSelected ? ` ${styles.messageGroupSelected}` : ''}`}

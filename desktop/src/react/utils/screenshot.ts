@@ -1,18 +1,17 @@
 // desktop/src/react/utils/screenshot.ts
 import html2canvas from 'html2canvas';
 import { useStore } from '../stores';
+import { selectSelectedIdsBySession } from '../stores/session-selectors';
 
 /**
  * 截图指定消息并保存到文件。
  *
  * @param targetMessageId - 触发截图的消息 ID（无勾选时用这个）
+ * @param sessionPath - 消息所属 session，用显式归属避免依赖全局焦点
  */
-export async function takeScreenshot(targetMessageId: string): Promise<void> {
+export async function takeScreenshot(targetMessageId: string, sessionPath: string): Promise<void> {
   const state = useStore.getState();
-  const sp = state.currentSessionPath;
-  if (!sp) return;
-
-  const ids = state.selectedIdsBySession[sp] || [];
+  const ids = selectSelectedIdsBySession(state, sessionPath);
   const messageIds = ids.length > 0 ? ids : [targetMessageId];
 
   // 1. 收集 DOM 节点（按文档顺序）
@@ -31,7 +30,7 @@ export async function takeScreenshot(targetMessageId: string): Promise<void> {
 
   // 2. 判断是否混合角色（决定是否显示头像）
   const roles = new Set<string>();
-  const session = state.chatSessions[sp];
+  const session = state.chatSessions[sessionPath];
   if (session) {
     for (const item of session.items) {
       if (item.type !== 'message') continue;
