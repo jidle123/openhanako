@@ -163,8 +163,29 @@ export function extractToolDetail(name: string, args: Record<string, unknown> | 
     }
     case 'search_memory':
       return { text: truncateHead((args.query || '') as string, 40) };
-    default:
-      return { text: '' };
+    case 'subagent':
+      return { text: truncateHead((args.task || '') as string, 30) };
+    case 'ask_agent':
+      return { text: (args.agent || '') as string };
+    case 'dm':
+      return { text: (args.to || '') as string };
+    case 'channel':
+      return { text: (args.channel || args.name || '') as string };
+    case 'cron':
+      return { text: truncateHead((args.label || args.prompt || '') as string, 30) };
+    case 'notify':
+      return { text: truncateHead((args.title || '') as string, 30) };
+    case 'artifact':
+      return { text: truncateHead((args.title || '') as string, 30) };
+    case 'install_skill':
+      return { text: (args.skill_name || '') as string };
+    case 'update_settings':
+      return { text: (args.key || args.setting || '') as string };
+    default: {
+      // 插件工具：取第一个有意义的字符串参数作详情
+      const first = Object.values(args).find(v => typeof v === 'string' && v.length > 0);
+      return { text: first ? truncateHead(first as string, 30) : '' };
+    }
   }
 }
 

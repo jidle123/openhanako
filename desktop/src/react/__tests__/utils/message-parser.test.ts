@@ -209,8 +209,12 @@ describe('extractToolDetail', () => {
     expect(d.hrefType).toBe('url');
   });
 
-  it('未知工具返回空', () => {
-    expect(extractToolDetail('unknown_tool', { foo: 'bar' }).text).toBe('');
+  it('未知工具取第一个字符串参数作详情', () => {
+    expect(extractToolDetail('unknown_tool', { foo: 'bar' }).text).toBe('bar');
+  });
+
+  it('未知工具无字符串参数返回空', () => {
+    expect(extractToolDetail('unknown_tool', { n: 42 }).text).toBe('');
   });
 
   it('无 args 返回空', () => {

@@ -30,6 +30,7 @@ import { createInstallSkillTool } from "../lib/tools/install-skill.js";
 import { createNotifyTool } from "../lib/tools/notify-tool.js";
 import { createUpdateSettingsTool } from "../lib/tools/update-settings-tool.js";
 import { createSubagentTool } from "../lib/tools/subagent-tool.js";
+import { createCheckDeferredTool } from "../lib/tools/check-deferred-tool.js";
 import { READ_ONLY_BUILTIN_TOOLS } from "./config-coordinator.js";
 import { formatSkillsForPrompt } from "../lib/pi-sdk/index.js";
 import { runCompatChecks } from "../lib/compat/index.js";
@@ -256,6 +257,11 @@ export class Agent {
       onNotify: (title, body) => this._notifyHandler?.(title, body),
     });
 
+    this._checkDeferredTool = createCheckDeferredTool({
+      getDeferredStore: () => this._engine?.deferredResults,
+      getSessionPath: () => this._engine?._sessionCoord?.currentSessionPath,
+    });
+
     // 10. 设置修改工具
     this._updateSettingsTool = createUpdateSettingsTool({
       getEngine: () => this._engine,
@@ -322,6 +328,8 @@ export class Agent {
         agentId,
         listAgents,
         engine: this._engine,
+        getDeferredStore: () => this._engine?.deferredResults,
+        getSessionPath: () => this._engine?._sessionCoord?.currentSessionPath,
       });
 
       this._dmTool = createDmTool({
@@ -358,6 +366,8 @@ export class Agent {
       },
       resolveUtilityModel: () => this._engine?.currentModel?.id || null,
       readOnlyBuiltinTools: READ_ONLY_BUILTIN_TOOLS,
+      getDeferredStore: () => this._engine?.deferredResults,
+      getSessionPath: () => this._engine?._sessionCoord?.currentSessionPath,
     });
 
     // 12. 组装 system prompt
@@ -441,6 +451,7 @@ export class Agent {
       this._notifyTool,
       this._updateSettingsTool,
       this._subagentTool,
+      this._checkDeferredTool,
     ].filter(Boolean);
   }
 

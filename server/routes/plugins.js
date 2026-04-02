@@ -4,6 +4,7 @@ import path from "path";
 import os from "os";
 import { extractZip } from "../../lib/extract-zip.js";
 import { resolveAgent } from "../utils/resolve-agent.js";
+import { fromRoot } from "../../shared/hana-root.js";
 
 /**
  * 代理分发：将 /plugins/:pluginId/* 的请求转发到对应 plugin 子 app。
@@ -62,7 +63,7 @@ export function createPluginsRoute(engine) {
     const pm = engine.pluginManager;
     if (!pm) return c.json([]);
     const source = c.req.query("source"); // ?source=community 或 ?source=builtin
-    let plugins = pm.listPlugins();
+    let plugins = pm.listPlugins().filter(p => !p.hidden);
     if (source) plugins = plugins.filter(p => p.source === source);
     return c.json(plugins.map(p => ({
       id: p.id, name: p.name, version: p.version,
@@ -233,15 +234,19 @@ export function createPluginsRoute(engine) {
     // Sanitize theme name to prevent path traversal
     const safeName = path.basename(theme).replace(/[^a-zA-Z0-9_-]/g, "");
     const candidates = [
-      path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "desktop", "src", "themes", `${safeName}.css`),
-      path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "desktop", "dist-renderer", "themes", `${safeName}.css`),
+      fromRoot("desktop", "src", "themes", `${safeName}.css`),
+      fromRoot("desktop", "dist-renderer", "themes", `${safeName}.css`),
     ];
     const found = candidates.find(p => fs.existsSync(p));
     if (!found) {
       c.header("Content-Type", "text/css");
       return c.body("/* theme not found */");
     }
-    const css = fs.readFileSync(found, "utf-8");
+    let css = fs.readFileSync(found, "utf-8");
+    // Flatten selectors for iframe consumption:
+    // [data-theme="xxx"], :root:not([data-theme]) → :root
+    // [data-theme="xxx"] → :root
+    css = css.replace(/\[data-theme="[^"]*"\](?:,\s*:root:not\(\[data-theme\]\))?/g, ":root");
     c.header("Content-Type", "text/css");
     c.header("Cache-Control", "public, max-age=300");
     return c.body(css);

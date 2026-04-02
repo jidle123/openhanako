@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "图片生成：火山引擎 Seedream、OpenAI GPT Image",
   "trust": "full-access",
+  "hidden": true,
   "contributes": {
     "configuration": {
       "properties": {

@@ -201,6 +201,14 @@ fs.mkdirSync(path.join(outDir, "desktop", "src", "locales"), { recursive: true }
 fs.cpSync(localesSrc, path.join(outDir, "desktop", "src", "locales"), { recursive: true });
 console.log("[build-server]   desktop/src/locales/");
 
+// Theme CSS（server/routes/plugins.js theme.css 端点通过 fromRoot("desktop","src","themes") 引用）
+const themesSrc = path.join(ROOT, "desktop", "src", "themes");
+if (fs.existsSync(themesSrc)) {
+  fs.mkdirSync(path.join(outDir, "desktop", "src", "themes"), { recursive: true });
+  fs.cpSync(themesSrc, path.join(outDir, "desktop", "src", "themes"), { recursive: true });
+  console.log("[build-server]   desktop/src/themes/");
+}
+
 // 系统插件（内嵌到 app，运行时 fromRoot("plugins") 读取）
 const pluginsSrc = path.join(ROOT, "plugins");
 if (fs.existsSync(pluginsSrc)) {

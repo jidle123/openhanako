@@ -303,13 +303,7 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
         const c = event.result.details.card;
         emitStreamEvent(sessionPath, ss, {
           type: "plugin_card",
-          card: {
-            type: c.type || "iframe",
-            pluginId: c.pluginId || "",
-            route: c.route || "",
-            title: c.title,
-            description: c.description || "",
-          },
+          card: { ...c, type: c.type || "iframe", pluginId: c.pluginId || "" },
         });
       }
 

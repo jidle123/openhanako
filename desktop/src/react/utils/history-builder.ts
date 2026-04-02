@@ -200,13 +200,7 @@ export function buildItemsFromHistory(data: HistoryApiResponse): ChatListItem[] 
         for (const cd of cds) {
           blocks.push({
             type: 'plugin_card',
-            card: {
-              type: cd.type || 'iframe',
-              pluginId: cd.pluginId,
-              route: cd.route,
-              title: cd.title,
-              description: cd.description || '',
-            },
+            card: { ...cd, type: cd.type || 'iframe' },
           } as any);
         }
       }
