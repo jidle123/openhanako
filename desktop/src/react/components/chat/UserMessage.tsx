@@ -124,6 +124,7 @@ export const UserMessage = memo(function UserMessage({ message, showAvatar, sess
       <MessageActions
         messageId={message.id}
         sessionPath={sessionPath}
+        align="left"
         onCopy={handleCopy}
         onScreenshot={handleScreenshot}
         copied={copied}

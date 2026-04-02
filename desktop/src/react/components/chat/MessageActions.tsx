@@ -12,10 +12,11 @@ interface Props {
   onScreenshot: () => void;
   copied: boolean;
   isStreaming: boolean;
+  align?: 'left' | 'right';
 }
 
 export const MessageActions = memo(function MessageActions({
-  messageId, sessionPath, onCopy, onScreenshot, copied, isStreaming,
+  messageId, sessionPath, onCopy, onScreenshot, copied, isStreaming, align = 'right',
 }: Props) {
   const { t } = useI18n();
   const selectedIds = useStore(s => selectSelectedIdsBySession(s, sessionPath));
@@ -29,7 +30,9 @@ export const MessageActions = memo(function MessageActions({
   }, [toggle, sessionPath, messageId]);
 
   return (
-    <div className={`${styles.msgActions}${isSelected ? ` ${styles.msgActionsVisible}` : ''}`}>
+    <div
+      className={`${styles.msgActions}${align === 'left' ? ` ${styles.msgActionsLeft}` : ''}${isSelected ? ` ${styles.msgActionsVisible}` : ''}`}
+    >
       {/* Checkbox */}
       <button
         className={`${styles.msgActionBtn}${isSelected ? ` ${styles.msgActionBtnActive}` : ''}`}
