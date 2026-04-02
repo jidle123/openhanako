@@ -24,12 +24,13 @@ export class PluginManager {
    * pluginsDirs: 多个扫描目录，先内嵌后用户（靠前的优先）
    * 兼容旧签名 { pluginsDir: string } → 自动转为单元素数组
    */
-  constructor({ pluginsDirs, pluginsDir, dataDir, bus, preferencesManager, appVersion }) {
+  constructor({ pluginsDirs, pluginsDir, dataDir, bus, preferencesManager, appVersion, getSessionPath }) {
     this._pluginsDirs = pluginsDirs || (pluginsDir ? [pluginsDir] : []);
     this._dataDir = dataDir;
     this._bus = bus;
     this._preferencesManager = preferencesManager || null;
     this._appVersion = appVersion || "0.0.0";
+    this._getSessionPath = getSessionPath || (() => null);
     this._plugins = new Map();
     this._scanned = [];
     this._opQueue = Promise.resolve();
@@ -95,7 +96,8 @@ export class PluginManager {
     if (fs.existsSync(path.join(pluginDir, "extensions"))) contributions.push("extensions");
     if (fs.existsSync(path.join(pluginDir, "index.js"))) contributions.push("lifecycle");
     const trust = manifest?.trust === "full-access" ? "full-access" : "restricted";
-    return { id, name, version, description, pluginDir, manifest, contributions, trust };
+    const hidden = !!manifest?.hidden;
+    return { id, name, version, description, pluginDir, manifest, contributions, trust, hidden };
   }
 
   async loadAll() {
@@ -209,7 +211,11 @@ export class PluginManager {
           ...(mod.promptSnippet ? { promptSnippet: mod.promptSnippet } : {}),
           ...(mod.promptGuidelines ? { promptGuidelines: mod.promptGuidelines } : {}),
           execute: async (_toolCallId, params, runtimeCtx) => {
-            const raw = await origExecute(params, runtimeCtx ? { ...ctx, ...runtimeCtx } : ctx);
+            const sessionCtx = { sessionPath: this._getSessionPath() };
+            const mergedCtx = runtimeCtx
+              ? { ...ctx, ...sessionCtx, ...runtimeCtx }
+              : { ...ctx, ...sessionCtx };
+            const raw = await origExecute(params, mergedCtx);
             // Pi SDK 期望 { content: ContentBlock[], details? }
             // Plugin tool 可能返回纯字符串，需要包装
             let result;

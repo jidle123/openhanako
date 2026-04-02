@@ -631,6 +631,7 @@ export class HanaEngine {
       bus,
       preferencesManager: this._prefs,
       appVersion,
+      getSessionPath: () => this.currentSessionPath,
     });
     this._pluginManager.scan();
     await this._pluginManager.loadAll();
