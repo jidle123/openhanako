@@ -59,7 +59,7 @@ export class SessionCoordinator {
     this._session = null;
     this._sessionStarted = false;
     this._sessions = new Map();
-    this._headlessRefCount = 0;
+    this._headlessOps = new Set();
     this._titlesCache = new Map(); // sessionDir → { titles, ts }
     this._metaCache = new Map();   // metaPath → { data, ts }
     this._pendingPlanMode = false;
@@ -667,8 +667,9 @@ export class SessionCoordinator {
 
     const bm = BrowserManager.instance();
     const wasBrowserRunning = bm.isRunning;
-    this._headlessRefCount++;
-    if (this._headlessRefCount === 1) bm.setHeadless(true);
+    const opId = `iso_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    this._headlessOps.add(opId);
+    if (this._headlessOps.size === 1) bm.setHeadless(true);
     let tempSessionMgr;
     const cleanupTempSession = () => {
       const sp = tempSessionMgr?.getSessionFile?.();
@@ -791,8 +792,8 @@ export class SessionCoordinator {
       }
       return { sessionPath: null, replyText: "", error: err.message };
     } finally {
-      this._headlessRefCount = Math.max(0, this._headlessRefCount - 1);
-      if (this._headlessRefCount === 0) bm.setHeadless(false);
+      this._headlessOps.delete(opId);
+      if (this._headlessOps.size === 0) bm.setHeadless(false);
       const browserNowRunning = bm.isRunning;
       if (browserNowRunning !== wasBrowserRunning) {
         this._d.emitEvent({ type: "browser_bg_status", running: browserNowRunning, url: bm.currentUrl }, null);
