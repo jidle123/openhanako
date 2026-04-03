@@ -46,6 +46,7 @@ import { createAuthRoute } from "./routes/auth.js";
 import { createDiaryRoute } from "./routes/diary.js";
 import { createConfirmRoute } from "./routes/confirm.js";
 import { createPluginsRoute } from "./routes/plugins.js";
+import { createCheckpointsRoute } from "./routes/checkpoints.js";
 // internal-browser WS is handled directly via raw ws.WebSocketServer in the
 // upgrade handler below (WsTransport needs raw ws .on()/.off() methods)
 import { ConfirmStore } from "../lib/confirm-store.js";
@@ -119,6 +120,10 @@ await engine.initPlugins(hub.eventBus);
 
 // 启动 Hub 调度器（Scheduler + ChannelRouter）
 hub.initSchedulers();
+
+engine.cleanupCheckpoints().catch(err => {
+  console.warn("[checkpoint] startup cleanup failed:", err.message);
+});
 
 // 加载 i18n
 loadLocale(engine.config?.locale);
@@ -232,6 +237,7 @@ app.route("/api", createAuthRoute(engine));
 app.route("/api", createDiaryRoute(engine));
 app.route("/api", createConfirmRoute(confirmStore, engine));
 app.route("/api", createPluginsRoute(engine));
+app.route("/api", createCheckpointsRoute(engine));
 // internal-browser WS — see unified upgrade handler in server startup below
 
 // 健康检查 + 身份信息
